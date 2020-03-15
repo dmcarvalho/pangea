@@ -1,10 +1,11 @@
 from django.contrib.gis.db import models
+from pangea import settings
 
 # Create your models here.
 
 from django.core.files.storage import FileSystemStorage
 
-fs = FileSystemStorage(location='media/imported_data')
+fs = FileSystemStorage(location=settings.MEDIA_ROOT)
 
 
 class ImportedData(models.Model):

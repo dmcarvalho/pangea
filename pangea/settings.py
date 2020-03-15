@@ -78,7 +78,8 @@ REST_FRAMEWORK = {
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
+        #   'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
+        'rest_framework.permissions.AllowAny'
     ]
 }
 
@@ -108,8 +109,8 @@ DATABASES = {
 }
 
 PANGEA_DB_URI = 'postgresql+psycopg2://{0}:{1}@{2}:{3}/{4}'.format(db_user, db_pass, db_host, db_port, db_name)
-PANGEA_DB_URI_OGR_STYLE = "PG:dbname={0} host={1} password={2} user={3} password={4}".format(db_name, db_host, db_port, db_user, db_pass)
-
+PANGEA_DB_URI_OGR_STYLE = 'PG:host={0} port={1} dbname={2} user={3} password={4}'.format(db_host, db_port, db_name, db_user, db_pass)
+TEMP_DIR = os.path.join(BASE_DIR, 'temp')
 
 
 PANGEA_IMPORTED_DATA_SCHEMA = 'imported_data'
@@ -153,3 +154,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = 'media/'

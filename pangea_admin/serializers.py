@@ -1,8 +1,8 @@
 from django.contrib.auth.models import User, Group, Permission
 from rest_framework import serializers
 from .models import ImportedTabularData, ImportedGeographicData, DataStatus, GeneralizationParams, LayerMetadata, Column
-from pangea.settings import PANGEA_DB_URI, PANGEA_IMPORTED_DATA_SCHEMA
-from .utils import import_csv_2_pg
+from pangea.settings import PANGEA_DB_URI, PANGEA_DB_URI_OGR_STYLE, PANGEA_IMPORTED_DATA_SCHEMA
+from .utils import import_csv_2_pg, import_ogr_2_pg
 import copy
 GENERIC_ERROR = "An error occurred while processing your request. Maybe, it can help you: %s"
 
@@ -70,23 +70,21 @@ class ImportedGeographicDataSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         ogr_params = {
             "encoding": validated_data['encoding'],
-            "srid": validated_data['delimiter'],
-            "decimal": validated_data['decimal']
+            "srid": validated_data['srid']
         }
-        csv_byteIO = copy.copy(validated_data['file_path'].file)
         table_name = validated_data['table_name']
-        try:            
-            import_csv_2_pg(csv_byteIO, PANGEA_DB_URI, PANGEA_IMPORTED_DATA_SCHEMA, table_name, pandas_params)
+        try:     
+            imported_data = ImportedGeographicData.objects.create(**validated_data)
+            data_status = {'imported_data': imported_data,'status': DataStatus.Status.IMPORTED}
+            DataStatus.objects.create(**data_status)
+            ok = import_ogr_2_pg(imported_data.file_path.path, PANGEA_DB_URI_OGR_STYLE, PANGEA_IMPORTED_DATA_SCHEMA, table_name, ogr_params)
+            if not ok:
+                raise Exception ('Ocorreu um erro')
         except Exception as e:
+            imported_data.delete()
             raise serializers.ValidationError(GENERIC_ERROR % e)
-        imported_data = ImportedTabularData.objects.create(**validated_data)
-        data_status = {'imported_data': imported_data,
-                        'status': DataStatus.Status.IMPORTED}
-        DataStatus.objects.create(**data_status)
+
         return imported_data
-
-
-
 
 
 class GeneralizationParamsSerializer(serializers.ModelSerializer):
@@ -102,6 +100,7 @@ class LayerMetadataSerializer(serializers.ModelSerializer):
         'table_name', 'geocod_column', 'dimension_column', 
         'topo_geom_column', 'is_a_composition_of', 
         'composition_column', 'zoom_min', 'zoom_max']
+        
 
 class ColumnSerializer(serializers.ModelSerializer):
     class Meta:

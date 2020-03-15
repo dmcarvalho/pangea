@@ -1,16 +1,16 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # *****************************************************************************
 # $Id$
 #
 # Project:  OpenGIS Simple Features Reference Implementation
 # Purpose:  Python port of a simple client for translating between formats.
-# Author:   Even Rouault, <even dot rouault at spatialys.com>
+# Author:   Even Rouault, <even dot rouault at mines dash paris dot org>
 #
 # Port from ogr2ogr.cpp whose author is Frank Warmerdam
 #
 # *****************************************************************************
-# Copyright (c) 2010-2013, Even Rouault <even dot rouault at spatialys.com>
+# Copyright (c) 2010-2013, Even Rouault <even dot rouault at mines-paris dot org>
 # Copyright (c) 1999, Frank Warmerdam
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -643,7 +643,6 @@ def main(args=None, progress_func=TermProgress, progress_data=None):
 # --------------------------------------------------------------------
     if pszOutputSRSDef is not None:
         poOutputSRS = osr.SpatialReference()
-        poOutputSRS.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
         if poOutputSRS.SetFromUserInput(pszOutputSRSDef) != 0:
             print("Failed to process SRS definition: %s" % pszOutputSRSDef)
             return False
@@ -653,7 +652,6 @@ def main(args=None, progress_func=TermProgress, progress_data=None):
 # --------------------------------------------------------------------
     if pszSourceSRSDef is not None:
         poSourceSRS = osr.SpatialReference()
-        poSourceSRS.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
         if poSourceSRS.SetFromUserInput(pszSourceSRSDef) != 0:
             print("Failed to process SRS definition: %s" % pszSourceSRSDef)
             return False
@@ -1227,12 +1225,16 @@ def SetupTargetLayer(poSrcDS, poSrcLayer, poDstDS, papszLCO, pszNewLayerName,
             return None
 
         poCT = osr.CoordinateTransformation(poSourceSRS, poOutputSRS)
+        if gdal.GetLastErrorMsg().find('Unable to load PROJ.4 library') != -1:
+            poCT = None
+
         if poCT is None:
             pszWKT = None
 
             print("Failed to create coordinate transformation between the\n" +
                   "following coordinate systems.  This may be because they\n" +
-                  "are not transformable.")
+                  "are not transformable, or because projection services\n" +
+                  "(PROJ.4 DLL/.so) could not be loaded.")
 
             pszWKT = poSourceSRS.ExportToPrettyWkt(0)
             print("Source:\n" + pszWKT)
