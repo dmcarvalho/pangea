@@ -2,7 +2,7 @@ from django.contrib.auth.models import User, Group, Permission
 from rest_framework import serializers
 from .models import ImportedTabularData, ImportedGeographicData, DataStatus, GeneralizationParams, LayerMetadata, Column
 from pangea.settings import PANGEA_DB_URI, PANGEA_DB_URI_OGR_STYLE, PANGEA_IMPORTED_DATA_SCHEMA
-from utils.importers import import_csv_2_pg, import_ogr_2_pg
+from .utils.importers import import_csv_2_pg, import_ogr_2_pg
 import copy
 GENERIC_ERROR = "An error occurred while processing your request. Maybe, it can help you: %s"
 

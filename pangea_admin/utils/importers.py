@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from sqlalchemy import create_engine
-from utils.ogr2ogr import main
+from .ogr2ogr import main
 from zipfile import ZipFile
 from pangea.settings import TEMP_DIR
 import shutil

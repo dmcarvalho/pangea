@@ -1,10 +1,6 @@
-from django.conf import settings
-from django.conf.urls.static import static
-
 from django.urls import include, path
 from rest_framework import routers
-from . import views
-
+from . import views, views_aux
 
 
 router = routers.DefaultRouter()
@@ -26,5 +22,18 @@ router.register(r'column', views.ColumnViewSet)
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
     path('', include(router.urls)),
-    path('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    path(r'api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    path('tables/', views_aux._get_tables),
+    path('geotables/', views_aux._get_geo_tables) ,
+    path('<table>/columns/', views_aux._get_colunms) 
+] 
+
+
+
+'''
+    path(r'^getTables/$', 'spada.views.ajax_tabela_request'),
+    path(r'^getGeoTables/$', 'spada.views.ajax_geo_tabela_request'),
+    path(r'^getColumns/(?P<table>[\w\ ]*)/$', 'spada.views.ajax_coluna_request'),
+    path(r'^geocolunas/(?P<esquema>\w*)/(?P<tabela>[\w\ ]*)/$', 'spada.views.ajax_geo_coluna_request'),
+    path(r'^colunas_id/(?P<identificador>\d+)/$', 'spada.views.ajax_coluna_id_request'),
+'''
