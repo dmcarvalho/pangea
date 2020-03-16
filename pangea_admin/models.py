@@ -14,7 +14,7 @@ class ImportedData(models.Model):
     encoding = models.CharField(max_length=50, default='utf8')   
     description = models.TextField(null=True, blank=True)
     metadata_url = models.URLField(null=True, blank=True)
-
+    
     def __str__(self):
         return self.table_name
 
@@ -25,6 +25,7 @@ class ImportedGeographicData(ImportedData):
 
 
 class ImportedTabularData(ImportedData):
+    compose_a_new_layer = models.BooleanField(default=True)
     delimiter = models.CharField(max_length=1, default=',')
     quotechar = models.CharField(max_length=1, null=True, blank=True)
     decimal = models.CharField(max_length=1, default='.')
