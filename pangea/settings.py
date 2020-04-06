@@ -87,11 +87,11 @@ REST_FRAMEWORK = {
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
 
-db_host = os.environ['DB_HOST'] if 'DB_HOST' in  os.environ else "localhost"
-db_port = os.environ['DB_PORT'] if 'DB_PORT' in  os.environ else "5432"
-db_user = os.environ['DB_USER'] if 'DB_USER' in  os.environ else "postgres"
-db_pass = os.environ['DB_PASS'] if 'DB_PASS' in  os.environ else "postgres"
-db_name = os.environ['DB_NAME'] if 'DB_NAME' in  os.environ else "pangea_dev"
+db_host = os.environ['PANGEA_DB_HOST'] if 'PANGEA_DB_HOST' in  os.environ else "localhost"
+db_port = os.environ['PANGEA_DB_PORT'] if 'PANGEA_DB_PORT' in  os.environ else "54320"
+db_user = os.environ['PANGEA_DB_USER'] if 'PANGEA_DB_USER' in  os.environ else "pangea"
+db_pass = os.environ['PANGEA_DB_PASS'] if 'PANGEA_DB_PASS' in  os.environ else "pangea"
+db_name = os.environ['PANGEA_DB_NAME'] if 'PANGEA_DB_NAME' in  os.environ else "pangea"
 
 
 # Database
@@ -153,7 +153,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
-STATIC_URL = '/static/'
 
+STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = 'media/'

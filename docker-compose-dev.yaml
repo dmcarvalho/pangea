@@ -1,0 +1,29 @@
+version: '3.3'
+services:
+    db:
+        container_name: postgis_3
+        image: postgis/postgis
+        restart: always
+        env_file:
+            - ./scripts/docker/development/db.env
+        volumes:
+            - ./data/develpment/pgdata:/var/lib/postgresql/data
+            - ./data/develpment/db-backup:/db-backup
+        ports:
+            - 54320:5432
+  
+    django:
+        network_mode: "host"
+        build:
+            context: .
+            dockerfile: Dockerfile-dev
+        depends_on:
+            - db            
+        ports:
+            - "8000:8000"
+            - "3000-3020:3000-3020"
+        volumes:
+            - .:/var/www/django
+        command: "./docker-entrypoint-dev.sh"
+        env_file:
+            - ./scripts/docker/development/pangea.env
