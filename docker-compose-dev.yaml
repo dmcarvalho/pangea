@@ -5,7 +5,7 @@ services:
         image: postgis/postgis
         restart: always
         env_file:
-            - ./scripts/docker/development/db.env
+            - ./server/scripts/docker/development/db.env
         volumes:
             - ./data/develpment/pgdata:/var/lib/postgresql/data
             - ./data/develpment/db-backup:/db-backup
@@ -15,15 +15,15 @@ services:
     django:
         network_mode: "host"
         build:
-            context: .
+            context: ./server
             dockerfile: Dockerfile-dev
         depends_on:
             - db            
         ports:
             - "8000:8000"
-            - "3000-3020:3000-3020"
+            - "3005:3005"
         volumes:
-            - .:/var/www/django
+            - ./server:/var/www/django
         command: "./docker-entrypoint-dev.sh"
         env_file:
-            - ./scripts/docker/development/pangea.env
+            - ./server/scripts/docker/development/pangea.env
