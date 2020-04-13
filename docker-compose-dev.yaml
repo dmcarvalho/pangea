@@ -3,6 +3,7 @@ services:
     db:
         container_name: postgis_3
         image: postgis/postgis
+        command: ["postgres", "-c", "logging_collector=on", "-c", "log_directory=/var/log/postgresql/", "-c", "log_filename=postgresql.log", "-c", "log_statement=all"]
         restart: always
         env_file:
             - ./server/scripts/docker/development/db.env

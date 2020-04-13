@@ -4,8 +4,9 @@ from rest_framework import permissions
 from django.contrib.auth.models import User, Group, Permission
 from .serializers import UserSerializer, GroupSerializer, PermissionSerializer
 
-from .models import ImportedTabularData, ImportedGeographicData, DataStatus, GeneralizationParams, LayerMetadata, Column
-from .serializers import ImportedTabularDataSerializer, ImportedGeographicDataSerializer, DataStatusSerializer, GeneralizationParamsSerializer, LayerMetadataSerializer, ColumnSerializer
+from .models import LayerStatus, Column, BasicTerritorialLevelLayer
+
+from .serializers import LayerStatusSerializer, ColumnSerializer, BasicTerritorialLevelLayerSerializer
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -35,17 +36,33 @@ class PermissionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAdminUser]
 
 
-
-class ImportedTabularDataViewSet(viewsets.ModelViewSet):
+class LayerStatusViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows groups to be viewed or edited.
     """
-    queryset = ImportedTabularData.objects.all()
-    serializer_class = ImportedTabularDataSerializer
+    queryset = LayerStatus.objects.all()
+    serializer_class = LayerStatusSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+class ColumnViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows groups to be viewed or edited.
+    """
+    queryset = Column.objects.all()
+    serializer_class = ColumnSerializer
     permission_classes = [permissions.IsAdminUser, permissions.DjangoModelPermissions]
 
 
-class ImportedGeographicDataViewSet(viewsets.ModelViewSet):
+class BasicTerritorialLevelLayerViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows groups to be viewed or edited.
+    """
+    queryset = BasicTerritorialLevelLayer.objects.all()
+    serializer_class = BasicTerritorialLevelLayerSerializer
+    permission_classes = [permissions.IsAdminUser, permissions.DjangoModelPermissions]
+
+
+'''class ImportedGeographicDataViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows groups to be viewed or edited.
     """
@@ -55,13 +72,6 @@ class ImportedGeographicDataViewSet(viewsets.ModelViewSet):
 
 
 
-class DataStatusViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows groups to be viewed or edited.
-    """
-    queryset = DataStatus.objects.all()
-    serializer_class = DataStatusSerializer
-    permission_classes = [permissions.IsAdminUser]
 
 
 class GeneralizationParamsViewSet(viewsets.ModelViewSet):
@@ -79,13 +89,6 @@ class LayerMetadataViewSet(viewsets.ModelViewSet):
     """
     queryset = LayerMetadata.objects.all()
     serializer_class = LayerMetadataSerializer
-    permission_classes = [permissions.IsAdminUser, permissions.DjangoModelPermissions]
+    permission_classes = [permissions.IsAdminUser, permissions.DjangoModelPermissions]'''
 
 
-class ColumnViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows groups to be viewed or edited.
-    """
-    queryset = Column.objects.all()
-    serializer_class = ColumnSerializer
-    permission_classes = [permissions.IsAdminUser, permissions.DjangoModelPermissions]

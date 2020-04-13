@@ -1,4 +1,4 @@
 .vscode/settings.json
-/media/
+media/
 *.py[co]
 [0-9]*_*.py

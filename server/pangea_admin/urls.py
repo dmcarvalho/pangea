@@ -22,4 +22,6 @@ urlpatterns = [
     path('tables/', views_aux._get_tables),
     path('geotables/', views_aux._get_geo_tables) ,
     path('<table>/columns/', views_aux._get_colunms),
-] 
+    path('createtopology/<layer_id>/', views_aux.create_topology),
+
+]   
