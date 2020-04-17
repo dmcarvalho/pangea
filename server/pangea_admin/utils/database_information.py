@@ -10,7 +10,9 @@ def get_anything(pg_uri, query):
     result = conn.execute(sqlalchemy_text(query))
     result = result.cursor.fetchall()
     conn.close()
-    return result
+    if len(result) > 0:
+        return result
+    return None
 
 
 def execute_anything(pg_uri, query):
@@ -110,6 +112,13 @@ def _create_layer_topology(pg_uri, topology_name, schema_name, table_name, topo_
         topology_name, schema_name, table_name, topo_geom_column_name, geom_type)
     topology_layer_id = execute_anything(pg_uri, query)[0][0]
     return topology_layer_id
+
+
+def _has_topology(pg_uri, topology_name):
+    query = "SELECT * FROM information_schema.schemata where schema_name = '{0}'".format(topology_name)
+    if get_anything(pg_uri, query):
+        return True
+    return False
 
 
 def _populate_topology(pg_uri, schema_name, table_name, topo_geom_column_name, geom_column_name, topology_name, topology_layer_id):

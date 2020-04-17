@@ -1,7 +1,9 @@
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 
-from .utils.database_information import get_schemas, get_tables, get_colunms,_create_topology, _create_layer_topology, _populate_topology, _drop_topology
+from .utils.database_information import get_schemas, get_tables, get_colunms,\
+    _create_topology, _create_layer_topology,\
+    _populate_topology, _drop_topology, _has_topology
 from django.conf import settings
 from .models import BasicTerritorialLevelLayer
 
@@ -31,21 +33,26 @@ def create_topology(request, layer_id):
     layers = BasicTerritorialLevelLayer.objects.filter(id=layer_id)
     if len(layers) == 1:
         layer = layers[0]
-        topology_name = '{0}_topology'.format(table_name)
+        topology_name = '{0}_topology'.format(layer.name)
         topo_geom_column_name = 'topo_{0}'.format(layer.geom_column)
+        if _has_topology(settings.PANGEA_DB_URI, topology_name):
+            return JsonResponse({"error": "This layer already has a topology"}, safe=False)
+        try:
+            topology_name, topology_id = _create_topology(settings.PANGEA_DB_URI, topology_name, layer.srid)
+            topology_layer_id = _create_layer_topology(settings.PANGEA_DB_URI, topology_name, layer.schema_name, layer.table_name, topo_geom_column_name, layer.geom_type)
+            _populate_topology(settings.PANGEA_DB_URI, layer.schema_name, layer.table_name, topo_geom_column_name, layer.geom_column, topology_name, topology_layer_id)
+
+            layer.topology_name = topology_name
+            layer.topology_layer_id = topology_layer_id
+            layer.topo_geom_column_name = topo_geom_column_name
+            layer.save()
+            return JsonResponse({topology_id:topology_name}, safe=False)
+        except Exception as e:
+            layer.topology_name = ''
+            layer.topology_layer_id = ''
+            layer.topo_geom_column_name = ''
+            layer.save()            
+            _drop_topology(settings.PANGEA_DB_URI, topology_name)
+            return JsonResponse({"error": e}, safe=False)
     else:
-        return JsonResponse({'error':'layer not found'}, safe=False)
-    try:
-        topology_name, topology_id = _create_topology(settings.PANGEA_DB_URI, layer.name, layer.srid)
-        topology_layer_id = _create_layer_topology(settings.PANGEA_DB_URI, topology_name, layer.schema_name, layer.table_name, topo_geom_column_name, layer.geom_type)
-        _populate_topology(settings.PANGEA_DB_URI, layer.schema_name, layer.table_name, topo_geom_column_name, layer.geom_column, topology_name, topology_layer_id)
-
-        layer.topology_name = topology_name
-        layer.topology_layer_id = topology_layer_id
-        layer.topo_geom_column_name = topo_geom_column_name
-        layer.save()
-    except Exception as e:
-        _drop_topology(settings.PANGEA_DB_URI, topology_name)
-        print(e)
-
-    return JsonResponse({topology_id:topology_name}, safe=False)
+        return JsonResponse({"error": "Layer not Found"}, safe=False)
