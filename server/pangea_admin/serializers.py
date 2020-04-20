@@ -91,6 +91,18 @@ class BasicTerritorialLevelLayerSerializer(serializers.ModelSerializer):
 
         return layer
 
+    def update(self, instance, validated_data):
+        if 'column_set' in validated_data:
+            try:
+                Column.objects.filter(layer=instance.id).delete()
+                column_set = validated_data.pop('column_set')
+                for column in column_set:
+                    column["layer"] = instance
+                    Column.objects.create(**column)
+            except Exception as e:
+                raise(e)
+        return super(BasicTerritorialLevelLayerSerializer, self).update(instance, validated_data)
+
 
 '''class ImportedTabularDataSerializer(serializers.ModelSerializer):
     datastatus_set = DataStatusSerializer(many=True, read_only=True)

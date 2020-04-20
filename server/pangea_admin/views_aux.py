@@ -3,9 +3,9 @@ from django.contrib.auth.decorators import login_required
 
 from .utils.database_information import get_schemas, get_tables, get_colunms,\
     _create_topology, _create_layer_topology,\
-    _populate_topology, _drop_topology, _has_topology
+    _populate_topology, _drop_topology, _pre_process_layer
 from django.conf import settings
-from .models import BasicTerritorialLevelLayer
+from .models import LayerStatus, BasicTerritorialLevelLayer
 
 
 @login_required
@@ -35,7 +35,7 @@ def create_topology(request, layer_id):
         layer = layers[0]
         topology_name = '{0}_topology'.format(layer.name)
         topo_geom_column_name = 'topo_{0}'.format(layer.geom_column)
-        if _has_topology(settings.PANGEA_DB_URI, topology_name):
+        if layer.status < LayerStatus.Status.TOPOLOGY_CREATED:
             return JsonResponse({"error": "This layer already has a topology"}, safe=False)
         try:
             topology_name, topology_id = _create_topology(settings.PANGEA_DB_URI, topology_name, layer.srid)
@@ -46,6 +46,11 @@ def create_topology(request, layer_id):
             layer.topology_layer_id = topology_layer_id
             layer.topo_geom_column_name = topo_geom_column_name
             layer.save()
+
+            layer_status = {'layer': layer,
+                           'status': LayerStatus.Status.TOPOLOGY_CREATED}
+            LayerStatus.objects.create(**layer_status)    
+
             return JsonResponse({topology_id:topology_name}, safe=False)
         except Exception as e:
             layer.topology_name = ''
@@ -56,3 +61,62 @@ def create_topology(request, layer_id):
             return JsonResponse({"error": e}, safe=False)
     else:
         return JsonResponse({"error": "Layer not Found"}, safe=False)
+
+
+def pre_process_layer(request, layer_id):
+    layers = BasicTerritorialLevelLayer.objects.filter(id=layer_id)
+    if len(layers) == 1:
+    
+        layer = layers[0]
+        if layer.status <  LayerStatus.Status.TOPOLOGY_CREATED:
+            return JsonResponse({"error": "Before this action you must create a topology!"}, safe=False)
+        if layer.status == LayerStatus.Status.LAYER_PRE_PROCESSED:
+            return JsonResponse({'error': 'This action has been executed!'}, safe=False)
+     
+        zoom_min = layer.zoom_min
+        zoom_max = layer.zoom_max
+        geocod = layer.geocod_column
+        geom_column = layer.topo_geom_column_name
+        table_name = layer.table_name
+        colunms = []
+        for column in layer.column_set.all():
+            colunms.append('%s as %s,' % (column.name, column.alias))
+        columns = ' '.join(colunms)
+
+        if not zoom_min or not zoom_max or not geocod:
+            return JsonResponse({"error": "Before this action you must define zoom parameters and geocod_column!"}, safe=False)
+        try:
+            _pre_process_layer(settings.PANGEA_DB_URI,
+                            settings.PANGEA_IMPORTED_DATA_SCHEMA,
+                            settings.PANGEA_LAYERS_PUBLISHED_SCHEMA,
+                            table_name, 
+                            geocod, 
+                            geom_column, 
+                            zoom_min, 
+                            zoom_max, 
+                            columns)
+            layer_status = {'layer': layer,
+                           'status': LayerStatus.Status.LAYER_PRE_PROCESSED}
+            LayerStatus.objects.create(**layer_status)    
+                            
+            return JsonResponse({'result':"Success"}, safe=False)
+        except Exception as e:
+            if e.orig.pgcode == '42P07':
+                return JsonResponse({'error': 'This action has been executed!'}, safe=False)
+            return JsonResponse({'error':e.orig.pgerror}, safe=False)
+    else:
+        return JsonResponse({"error": "Layer not Found"}, safe=False)
+
+
+def publish_layer(request, layer_id):
+    layers = BasicTerritorialLevelLayer.objects.filter(id=layer_id)
+    if len(layers) == 1:
+        layer = layers[0]
+        if layer.status == LayerStatus.Status.LAYER_PUBLISHED:
+            return JsonResponse({"error": "This action has been executed!"}, safe=False)
+        if layer.status != LayerStatus.Status.LAYER_PRE_PROCESSED:
+            return JsonResponse({"error": "Before this action you must preprocess this layer!"}, safe=False)
+        layer_status = {'layer': layer,
+                        'status': LayerStatus.Status.LAYER_PUBLISHED}
+        LayerStatus.objects.create(**layer_status)
+        return JsonResponse({'result':"Success"}, safe=False)        

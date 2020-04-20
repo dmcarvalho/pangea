@@ -23,5 +23,8 @@ urlpatterns = [
     path('geotables/', views_aux._get_geo_tables) ,
     path('<table>/columns/', views_aux._get_colunms),
     path('createtopology/<layer_id>/', views_aux.create_topology),
+    path('preprocesslayer/<layer_id>/', views_aux.pre_process_layer),
+    path('publishlayer/<layer_id>/', views_aux.publish_layer),
+
 
 ]   

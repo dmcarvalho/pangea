@@ -56,6 +56,9 @@ class GeneralizationParams(models.Model):
     zoom_level = models.IntegerField(primary_key=True)
     factor = models.FloatField()
 
+    def __str__(self):
+        return '%s' % self.zoom_level
+
 
 class Layer(models.Model):
     name = models.CharField(max_length=200, unique=True)    
@@ -70,16 +73,19 @@ class Layer(models.Model):
 
     zoom_min = models.ForeignKey(GeneralizationParams, on_delete=models.CASCADE, related_name='zoom_min', null=True, blank=True)
     zoom_max = models.ForeignKey(GeneralizationParams, on_delete=models.CASCADE, related_name='zoom_max', null=True, blank=True)
+    
+    @property
+    def status(self):
+        status = self.layerstatus_set.all().latest('date')
+        return status.status
 
 
 class LayerStatus(models.Model):
     class Status(models.IntegerChoices):
-        IMPORTED = 0
-        TOPOLOGY_CREATED = 1
-        LAYER_CREATED_WITHOUT_TOPOLOGY = 2
-        LAYER_CREATED_WITH_TOPOLOGY = 3
-        LAYER_PUBLISHED_WITHOUT_TOPOLOGY = 4
-        LAYER_PUBLISHED_WITH_TOPOLOGY = 5
+        IMPORTED = 1
+        TOPOLOGY_CREATED = 2
+        LAYER_PRE_PROCESSED = 4
+        LAYER_PUBLISHED = 8
     layer = models.ForeignKey(Layer, on_delete=models.CASCADE)
     status = models.IntegerField(choices=Status.choices, default=0)
     date = models.DateTimeField(auto_now=True)

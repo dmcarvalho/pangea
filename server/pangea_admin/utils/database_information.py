@@ -29,7 +29,7 @@ def execute_anything(pg_uri, query):
             else:
                 result = None
     except Exception as e:
-        raise('Ocorreu um erro: %s' % e )
+        raise(e)
     finally:
         conn.close()
 
@@ -107,9 +107,9 @@ def _drop_topology(pg_uri, topology_name):
     return topology_name
 
 
-def _create_layer_topology(pg_uri, topology_name, schema_name, table_name, topo_geom_column_name, geom_type):
+def _create_layer_topology(pg_uri, topology_name, imported_data_schema, table_name, topo_geom_column_name, geom_type):
     query = "SELECT topology.AddTopoGeometryColumn('{0}', '{1}', '{2}', '{3}', '{4}')".format(
-        topology_name, schema_name, table_name, topo_geom_column_name, geom_type)
+        topology_name, imported_data_schema, table_name, topo_geom_column_name, geom_type)
     topology_layer_id = execute_anything(pg_uri, query)[0][0]
     return topology_layer_id
 
@@ -121,17 +121,34 @@ def _has_topology(pg_uri, topology_name):
     return False
 
 
-def _populate_topology(pg_uri, schema_name, table_name, topo_geom_column_name, geom_column_name, topology_name, topology_layer_id):
+def _populate_topology(pg_uri, imported_data_schema, table_name, topo_geom_column_name, geom_column_name, topology_name, topology_layer_id):
     query = "UPDATE {0}.{1} SET {2} = topology.toTopoGeom({3}, '{4}', {5})".format(
-        schema_name, table_name, topo_geom_column_name, geom_column_name, topology_name, topology_layer_id)
+        imported_data_schema, table_name, topo_geom_column_name, geom_column_name, topology_name, topology_layer_id)
     execute_anything(pg_uri, query)
     return True
-    # -- Populate the layer and the topology
-    # ; -- 8.75 seconds
 
-    # -- Simplify all edges up to 10000 units
-    # SELECT SimplifyEdgeGeom('france_dept_topo', edge_id, 10000) FROM france_dept_topo.edge; -- 3.86 seconds
-
-    # -- Convert the TopoGeometries to Geometries for visualization
-    # ALTER TABLE france_dept ADD geomsimp GEOMETRY;
-    # UPDATE france_dept SET geomsimp = topogeom::geometry; -- 0.11 seconds
+def _pre_process_layer(pg_uri, imported_data_schema, layers_published_schema, table_name, geocod, geocod_column, zoom_min, zoom_max, columns):
+    try:
+        query = '\
+        CREATE TABLE {0}.{1} as SELECT\
+            pangea_admin_generalizationparams.zoom_level,\
+            {1}.{3},\
+            {7}\
+            topology.ST_Simplify({1}.{4}, pangea_admin_generalizationparams.factor) as {4}\
+        FROM\
+            public.pangea_admin_generalizationparams,\
+            {2}.{1}\
+        WHERE\
+            pangea_admin_generalizationparams.zoom_level >= {5} AND\
+            pangea_admin_generalizationparams.zoom_level <= {6};'.format(layers_published_schema,
+                                                                        table_name,
+                                                                        imported_data_schema,
+                                                                        geocod,
+                                                                        geocod_column,
+                                                                        zoom_min,
+                                                                        zoom_max,
+                                                                        columns)
+        execute_anything(pg_uri, query)
+        return True
+    except Exception as e:
+        raise(e)
