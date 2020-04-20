@@ -113,7 +113,7 @@ TEMP_DIR = os.path.join(BASE_DIR, 'temp')
 
 
 PANGEA_IMPORTED_DATA_SCHEMA = 'imported_data'
-
+PANGEA_LAYERS_PUBLISHED_SCHEMA = 'layers_published'
 
 
 # Password validation
