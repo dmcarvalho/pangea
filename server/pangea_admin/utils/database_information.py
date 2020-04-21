@@ -132,9 +132,9 @@ def _pre_process_layer(pg_uri, imported_data_schema, layers_published_schema, ta
         query = '\
         CREATE TABLE {0}.{1} as SELECT\
             pangea_admin_generalizationparams.zoom_level,\
-            {1}.{3},\
+            {1}.{3}::bigint,\
             {7}\
-            topology.ST_Simplify({1}.{4}, pangea_admin_generalizationparams.factor) as {4}\
+            st_transform(topology.ST_Simplify({1}.{4}, pangea_admin_generalizationparams.factor), 3857) as {4}\
         FROM\
             public.pangea_admin_generalizationparams,\
             {2}.{1}\
@@ -152,3 +152,63 @@ def _pre_process_layer(pg_uri, imported_data_schema, layers_published_schema, ta
         return True
     except Exception as e:
         raise(e)
+
+
+def _get_layers(pg_uri, host):
+    query = "\
+            select\
+                json_agg(json_build_object( \
+                    pangea_admin_layer.name, json_build_object( \
+                            'description', pangea_admin_layer.description, 'fields',json_build_object( \
+                                'geocod', pangea_admin_layer.geocod_column, 'dimension', \
+                                pangea_admin_basicterritoriallevellayer.dimension_column, \
+                                'attributes', columns.fields, \
+                                'geom', 'pangea_admin_basicterritoriallevellayer.topo_geom_column_name, \
+                                'geom_type', pangea_admin_basicterritoriallevellayer.geom_type, \
+                                'srid', pangea_admin_basicterritoriallevellayer.srid, \
+                                'enconding', 'utf8'),\
+                            'zoom_min', pangea_admin_layer.zoom_min_id, \
+                            'zoom_max', pangea_admin_layer.zoom_max_id,\
+                            'host', '%s' ||  pangea_admin_layer.name || '/{z}/{x}/{y}.mvt')))\
+            from\
+                public.pangea_admin_layer,\
+                public.pangea_admin_basicterritoriallevellayer,\
+                    public.pangea_admin_layerstatus,\
+                (\
+                select\
+                    pangea_admin_layer.id,\
+                    json_agg(pangea_admin_column.alias) as fields\
+                from\
+                    public.pangea_admin_layer,\
+                    public.pangea_admin_column\
+                where\
+                    pangea_admin_column.layer_id = pangea_admin_layer.id\
+                group by\
+                    pangea_admin_layer.id\
+                order by\
+                    pangea_admin_layer.id ) as columns\
+            where\
+                pangea_admin_basicterritoriallevellayer.layer_ptr_id = pangea_admin_layer.id  AND\
+                pangea_admin_layerstatus.layer_id = pangea_admin_layer.id and   pangea_admin_layerstatus.status = 8 AND \
+                columns.id = pangea_admin_layer.id;" % (host)
+    layers = execute_anything(pg_uri, query)[0][0]
+    return layers
+
+def get_mvt(pg_uri, params):
+    query = "\
+    select\
+        st_asmvt(q, '{layer_name}', 4096, 'geom', '{geocod}') as mvt \
+    from\
+        (with t as (select  TileBBox({z},{x},{y}) as box) \
+        select\
+            {geocod},\
+            {fields},\
+        st_asmvtgeom({table_name}.{geom}, t.box, 4096, 256, true) as geom\
+        from\
+        {schema_name}.{table_name}, t\
+        where\
+            zoom_level = {z}\
+        and t.box && {table_name}.{geom} \
+        and st_intersects(t.box, {table_name}.{geom})) as q;".format(**params)
+    mvt = get_anything(pg_uri, query)[0][0]
+    return mvt

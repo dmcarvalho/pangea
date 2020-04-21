@@ -17,7 +17,7 @@ router.register(r'basicterritoriallevel', views.BasicTerritorialLevelLayerViewSe
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
-    path('', include(router.urls)),
+    path(r'api/', include(router.urls)),
     path(r'api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('tables/', views_aux._get_tables),
     path('geotables/', views_aux._get_geo_tables) ,
@@ -25,6 +25,8 @@ urlpatterns = [
     path('createtopology/<layer_id>/', views_aux.create_topology),
     path('preprocesslayer/<layer_id>/', views_aux.pre_process_layer),
     path('publishlayer/<layer_id>/', views_aux.publish_layer),
+    path('', views_aux.get_layers),
+    path('tile/<layer_name>/<z>/<x>/<y>.mvt', views_aux.mvt),
 
 
 ]   

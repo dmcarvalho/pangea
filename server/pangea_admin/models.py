@@ -68,6 +68,7 @@ class Layer(models.Model):
     _file = models.FileField(storage=fs)
     schema_name = models.CharField(max_length=200, null=True, blank=True)
     table_name = models.CharField(max_length=200, null=True, blank=True)
+    geocod_column =  models.CharField(max_length=200, null=True, blank=True)
 
     encoding = models.CharField(max_length=50, default='utf8', null=True, blank=True)   
 
@@ -78,6 +79,16 @@ class Layer(models.Model):
     def status(self):
         status = self.layerstatus_set.all().latest('date')
         return status.status
+
+    @property
+    def fields(self):
+        columns = self.column_set.all().values_list('alias', flat=True)
+        return ', '.join(columns)
+
+class Column(models.Model):
+    layer = models.ForeignKey(Layer, on_delete=models.CASCADE)
+    name = models.CharField(max_length=200)
+    alias = models.CharField(max_length=200)
 
 
 class LayerStatus(models.Model):
@@ -91,11 +102,7 @@ class LayerStatus(models.Model):
     date = models.DateTimeField(auto_now=True)
 
 
-class TerritorialLevelLayer(Layer):
-    geocod_column =  models.CharField(max_length=200, null=True, blank=True)
-
-
-class BasicTerritorialLevelLayer(TerritorialLevelLayer):   
+class BasicTerritorialLevelLayer(Layer):   
     srid = models.IntegerField()   
     dimension_column =  models.CharField(max_length=200, null=True, blank=True)
     geom_column =  models.CharField(max_length=200, null=True, blank=True)
@@ -104,10 +111,6 @@ class BasicTerritorialLevelLayer(TerritorialLevelLayer):
     topology_layer_id = models.IntegerField(null=True, blank=True)
     topo_geom_column_name = models.CharField(max_length=200, null=True, blank=True)    
 
-class Column(models.Model):
-    layer = models.ForeignKey(Layer, on_delete=models.CASCADE)
-    name = models.CharField(max_length=200)
-    alias = models.CharField(max_length=200)
 
 
 '''

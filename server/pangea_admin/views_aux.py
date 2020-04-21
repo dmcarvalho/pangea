@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 
 from .utils.database_information import get_schemas, get_tables, get_colunms,\
     _create_topology, _create_layer_topology,\
-    _populate_topology, _drop_topology, _pre_process_layer
+    _populate_topology, _drop_topology, _pre_process_layer, _get_layers, get_mvt
 from django.conf import settings
 from .models import LayerStatus, BasicTerritorialLevelLayer
 
@@ -27,6 +27,7 @@ def _get_colunms(request, table):
     response = get_colunms(settings.PANGEA_DB_URI, settings.PANGEA_IMPORTED_DATA_SCHEMA, table)
     return JsonResponse(response, safe=False)
 
+
 # @login_required
 def create_topology(request, layer_id):
     topology_id, topology_name = '-1', 'erro'
@@ -35,7 +36,7 @@ def create_topology(request, layer_id):
         layer = layers[0]
         topology_name = '{0}_topology'.format(layer.name)
         topo_geom_column_name = 'topo_{0}'.format(layer.geom_column)
-        if layer.status < LayerStatus.Status.TOPOLOGY_CREATED:
+        if layer.status >= LayerStatus.Status.TOPOLOGY_CREATED:
             return JsonResponse({"error": "This layer already has a topology"}, safe=False)
         try:
             topology_name, topology_id = _create_topology(settings.PANGEA_DB_URI, topology_name, layer.srid)
@@ -119,4 +120,33 @@ def publish_layer(request, layer_id):
         layer_status = {'layer': layer,
                         'status': LayerStatus.Status.LAYER_PUBLISHED}
         LayerStatus.objects.create(**layer_status)
-        return JsonResponse({'result':"Success"}, safe=False)        
+        return JsonResponse({'result':"Success"}, safe=False)
+
+
+def get_layers(request):
+    result = _get_layers(settings.PANGEA_DB_URI, 'http://kicahost/')
+    return JsonResponse(result, safe=False)
+from django.http import HttpResponse
+import gzip
+
+
+def mvt(request, layer_name, z, x, y):
+    layers = BasicTerritorialLevelLayer.objects.filter(name=layer_name)
+    if len(layers) == 1:
+        layer = layers[0]
+        if layer.status == 8:
+            params =  {
+                "layer_name": layer.name,
+                "geocod": layer.geocod_column,
+                "z": z,
+                "x": x,
+                "y": y,
+                "fields": layer.fields,
+                "table_name": layer.table_name,
+                "geom": layer.topo_geom_column_name,
+                "schema_name": settings.PANGEA_LAYERS_PUBLISHED_SCHEMA,
+            }
+            result = get_mvt(settings.PANGEA_DB_URI, params)
+            response = HttpResponse(gzip.compress(result), content_type='application/x-protobuf')
+            response['Content-Encoding'] = 'gzip'
+            return response
