@@ -1,16 +1,18 @@
-from django.contrib.auth.models import User, Group, Permission
-from rest_framework import serializers
-from pangea.settings import PANGEA_DB_URI, PANGEA_DB_URI_OGR_STYLE, PANGEA_IMPORTED_DATA_SCHEMA
-from .utils.importers import import_csv_2_pg, import_ogr_2_pg
 import copy
-
-GENERIC_ERROR = "An error occurred while processing your request. Maybe, it can help you: %s"
-
-from .models import LayerStatus, Column, LayerStatus, BasicTerritorialLevelLayer, ComposedTerritorialLevelLayer 
-from .utils.database_information import get_geometry_column, get_geometry_type
-
 import unidecode
 
+from django.db import transaction, IntegrityError
+from django.contrib.auth.models import User, Group, Permission
+from rest_framework import serializers
+
+
+from pangea.settings import PANGEA_DB_URI, PANGEA_DB_URI_OGR_STYLE, PANGEA_IMPORTED_DATA_SCHEMA
+from .utils.database_information import get_geometry_column, get_geometry_type, get_colunms
+from .utils.importers import import_csv_2_pg, import_ogr_2_pg
+from .models import LayerStatus, Column, LayerStatus, BasicTerritorialLevelLayer, ComposedTerritorialLevelLayer, ChoroplethLayer
+
+
+GENERIC_ERROR = "An error occurred while processing your request. Maybe, it can help you: %s"
 
 class PermissionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -57,6 +59,7 @@ class BasicTerritorialLevelLayerSerializer(serializers.ModelSerializer):
                   'srid', 'geocod_column', 'dimension_column',
                   'encoding', 'zoom_min', 'zoom_max', 'column_set', 'layerstatus_set']
 
+    @transaction.atomic
     def create(self, validated_data):
         ogr_params = {
             "encoding": validated_data['encoding'],
@@ -91,6 +94,7 @@ class BasicTerritorialLevelLayerSerializer(serializers.ModelSerializer):
 
         return layer
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         if 'column_set' in validated_data:
             try:
@@ -101,7 +105,7 @@ class BasicTerritorialLevelLayerSerializer(serializers.ModelSerializer):
                     Column.objects.create(**column)
             except Exception as e:
                 raise(e)
-        return super(BasicTerritorialLevelLayerSerializer, self).update(instance, validated_data)
+        return super().update(instance, validated_data)
 
 
 class ComposedTerritorialLevelLayerSerializer(serializers.ModelSerializer):
@@ -114,9 +118,9 @@ class ComposedTerritorialLevelLayerSerializer(serializers.ModelSerializer):
                   'is_a_composition_of', 'geocod_column', 
                   'delimiter', 'quotechar', 'decimal','composition_column',
                   'encoding', 'zoom_min', 'zoom_max', 'column_set', 'layerstatus_set']
-
+    
+    @transaction.atomic
     def create(self, validated_data):
-        
         table_name = unidecode.unidecode('tb_{0}'.format(validated_data['name']))
         validated_data['table_name'] = table_name
         validated_data['schema_name'] = PANGEA_IMPORTED_DATA_SCHEMA
@@ -147,6 +151,7 @@ class ComposedTerritorialLevelLayerSerializer(serializers.ModelSerializer):
 
         return layer
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         if 'column_set' in validated_data:
             try:
@@ -157,29 +162,81 @@ class ComposedTerritorialLevelLayerSerializer(serializers.ModelSerializer):
                     Column.objects.create(**column)
             except Exception as e:
                 raise(e)
-        return super(ComposedTerritorialLevelLayerSerializer, self).update(instance, validated_data)
+        return super().update(instance, validated_data)
 
-'''class ImportedTabularDataSerializer(serializers.ModelSerializer):
-    datastatus_set = DataStatusSerializer(many=True, read_only=True)
+
+
+
+class ChoroplethLayerSerializer(serializers.ModelSerializer):
+    layerstatus_set = LayerStatusSerializer(many=True, read_only=True)
+    column_set = ColumnSerializer(many=True, read_only=False, required=False)
 
     class Meta:
-        model = ImportedTabularData
-        fields = ['id', 'url', 'file_path', 'table_name', 'description', 'metadata_url',
-                  'encoding', 'delimiter', 'quotechar', 'decimal', 'datastatus_set']
+        model = ChoroplethLayer
+        fields = ['id', 'name', 'description', 'metadata', '_file',
+                  'layer', 'geocod_column', 
+                  'delimiter', 'quotechar', 'decimal',
+                  'encoding', 'column_set', 'layerstatus_set']
+
+    @transaction.atomic
+    def create(self, validated_data):
+        
+        table_name = unidecode.unidecode('tb_{0}'.format(validated_data['name']))
+        validated_data['table_name'] = table_name
+        validated_data['schema_name'] = PANGEA_IMPORTED_DATA_SCHEMA
+
+        try:
+            layer = ChoroplethLayer.objects.create(
+                **validated_data)
+            layer_status = {'layer': layer,
+                           'status': LayerStatus.Status.IMPORTED}
+            LayerStatus.objects.create(**layer_status)
+
+            pandas_params = {
+                "encoding": validated_data['encoding'],
+                "delimiter": validated_data['delimiter'],
+                "decimal": validated_data['decimal']
+            }
+            if 'quotechar' in validated_data['quotechar']:
+                pandas_params["quotechar"] = validated_data['quotechar']
+                pandas_params["quoting"] = 0  # QUOTE_MINIMAL
+
+            import_csv_2_pg(layer._file.path, PANGEA_DB_URI,
+                            PANGEA_IMPORTED_DATA_SCHEMA, table_name, pandas_params)
+
+            columns = get_colunms(PANGEA_IMPORTED_DATA_SCHEMA, table_name)
+            for column in columns:
+                data = {"layer":layer,
+                        "name": column['column'],
+                        "alias": column['column']                    
+                        }
+                Column.objects.create(**data)
+
+        except Exception as e:
+            raise serializers.ValidationError(GENERIC_ERROR % e)
+
+        return layer
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        if 'column_set' in validated_data:
+            try:
+                Column.objects.filter(layer=instance.id).delete()
+                column_set = validated_data.pop('column_set')
+                for data in column_set:
+                    data["layer"] = instance
+                    if 'id' in data:
+                        id = data.pop('id')
+                        obj = Column.objects.get(id=id)
+                        for attr, val in data.items():
+                            if hasattr(obj, attr):
+                                setattr(obj, attr, val)
+                        obj.save(force_update=True)
+                    else:
+                        Column.objects.create(**column)
+            except Exception as e:
+                raise(e)
+        return super().update(instance, validated_data)
 
 
 
-
-class GeneralizationParamsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = GeneralizationParams
-        fields = ['zoom_level', 'url', 'factor']
-
-
-class LayerMetadataSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = LayerMetadata
-        fields = ['id', 'url', 'layer_name', 'data_imported', 'schema_name',
-                  'table_name', 'geocod_column', 'dimension_column',
-                  'topo_geom_column', 'is_a_composition_of',
-                  'composition_column', 'zoom_min', 'zoom_max']'''

@@ -159,7 +159,7 @@ def _pre_process_basic_territorial_level_layer(params):
         CREATE TABLE {layers_published_schema}.{table_name} as SELECT\
             pangea_admin_generalizationparams.zoom_level,\
             {table_name}.{geocod}::bigint,\
-            {columns},\
+            {columns}\
             st_transform(topology.ST_Simplify({table_name}.{topo_geom_column_name}, pangea_admin_generalizationparams.factor), 3857) as geom\
         FROM\
             public.pangea_admin_generalizationparams,\
@@ -199,7 +199,27 @@ def _pre_process_composed_territorial_level_layer(params):
         raise(e)
 
 
-
+def _pre_process_choroplethlayer_level_layer(params):
+    """
+    """
+    try:
+        query = '\
+            CREATE TABLE {layers_published_schema}.{table_name} AS\
+            SELECT \
+                {base_table_name}.zoom_level, \
+                {base_colunms},\
+                {table_name}.{geocod}, \
+                {columns},\
+                {base_table_name}.geom\
+            FROM \
+                {imported_data_schema}.{table_name} INNER JOIN {layers_published_schema}.{base_table_name}\
+            ON\
+                {table_name}.{geocod} = {base_table_name}.{base_geocod};'.format(**params)
+        execute_anything(query)
+        create_index(params)           
+        return True
+    except Exception as e:
+        raise(e)
 
 
 def _get_layers(host):

@@ -13,6 +13,7 @@ router.register(r'layerstatus', views.LayerStatusViewSet)
 
 router.register(r'basicterritoriallevel', views.BasicTerritorialLevelLayerViewSet)
 router.register(r'composedbasicterritoriallevel', views.ComposedTerritorialLevelLayerViewSet)
+router.register(r'choroplethlayer', views.ChoroplethLayerViewSet)
 
 
 

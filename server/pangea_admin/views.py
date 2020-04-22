@@ -4,9 +4,9 @@ from rest_framework import permissions
 from django.contrib.auth.models import User, Group, Permission
 from .serializers import UserSerializer, GroupSerializer, PermissionSerializer
 
-from .models import LayerStatus, Column, BasicTerritorialLevelLayer, ComposedTerritorialLevelLayer
+from .models import LayerStatus, Column, BasicTerritorialLevelLayer, ComposedTerritorialLevelLayer, ChoroplethLayer
 
-from .serializers import LayerStatusSerializer, ColumnSerializer, BasicTerritorialLevelLayerSerializer, ComposedTerritorialLevelLayerSerializer
+from .serializers import LayerStatusSerializer, ColumnSerializer, BasicTerritorialLevelLayerSerializer, ComposedTerritorialLevelLayerSerializer, ChoroplethLayerSerializer
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -69,35 +69,13 @@ class ComposedTerritorialLevelLayerViewSet(viewsets.ModelViewSet):
     queryset = ComposedTerritorialLevelLayer.objects.all()
     serializer_class = ComposedTerritorialLevelLayerSerializer
     permission_classes = [permissions.IsAdminUser, permissions.DjangoModelPermissions]
+    
 
-
-'''class ImportedGeographicDataViewSet(viewsets.ModelViewSet):
+class ChoroplethLayerViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows groups to be viewed or edited.
     """
-    queryset = ImportedGeographicData.objects.all()
-    serializer_class = ImportedGeographicDataSerializer
+    queryset = ChoroplethLayer.objects.all()
+    serializer_class = ChoroplethLayerSerializer
     permission_classes = [permissions.IsAdminUser, permissions.DjangoModelPermissions]
-
-
-
-
-
-class GeneralizationParamsViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows groups to be viewed or edited.
-    """
-    queryset = GeneralizationParams.objects.all()
-    serializer_class = GeneralizationParamsSerializer
-    permission_classes = [permissions.IsAdminUser]
-
-
-class LayerMetadataViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows groups to be viewed or edited.
-    """
-    queryset = LayerMetadata.objects.all()
-    serializer_class = LayerMetadataSerializer
-    permission_classes = [permissions.IsAdminUser, permissions.DjangoModelPermissions]'''
-
 

@@ -8,7 +8,7 @@ from .utils.database_information import get_schemas, get_tables, get_colunms,\
     _create_topology, _create_layer_topology,\
     _populate_topology, _drop_topology, _get_layers, get_mvt
 
-from .utils.preprocessor import pre_process_basic_territorial_level_layer, pre_process_composed_territorial_level_layer
+from .utils.preprocessor import pre_process_basic_territorial_level_layer, pre_process_composed_territorial_level_layer, pre_process_choroplethlayer_level_layer
 from .models import LayerStatus, Layer, BasicTerritorialLevelLayer, ComposedTerritorialLevelLayer
 
 
@@ -36,7 +36,7 @@ def create_topology(request, layer_id):
     layers = BasicTerritorialLevelLayer.objects.filter(id=layer_id)
     if len(layers) == 1:
         layer = layers[0]
-        topology_name = '{0}_topology'.format(layer.name)
+        topology_name = 'topology_{0}'.format(layer.name)
         topo_geom_column_name = 'topo_{0}'.format(layer.geom_column)
         if layer.status >= LayerStatus.Status.TOPOLOGY_CREATED:
             return JsonResponse({"error": "This layer already has a topology"}, safe=False)
@@ -97,6 +97,9 @@ def pre_process_layer(request, layer_id):
         elif hasattr(layer, 'basicterritoriallevellayer'):
             layer = layer.basicterritoriallevellayer
             response = pre_process_basic_territorial_level_layer(layer)
+        elif hasattr(layer, 'choroplethlayer'):
+            layer = layer.choroplethlayer
+            response = pre_process_choroplethlayer_level_layer(layer)
     else:
         response = {"error": "Layer not Found"}
     return JsonResponse(response, safe=False)
@@ -114,6 +117,8 @@ def publish_layer(request, layer_id):
                         'status': LayerStatus.Status.LAYER_PUBLISHED}
         LayerStatus.objects.create(**layer_status)
         return JsonResponse({'result': "Success"}, safe=False)
+    else:
+        return JsonResponse({"error": "Layer not Found"}, safe=False)
 
 
 def get_layers(request):
