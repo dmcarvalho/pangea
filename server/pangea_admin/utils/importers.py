@@ -17,11 +17,14 @@ def randomString(stringLength=10):
     return ''.join(random.choice(letters) for i in range(stringLength))
 
 
-def import_csv_2_pg(csv_byteIO, pg_uri, schema, table, pandas_params):
-    df = pd.read_csv(csv_byteIO, **pandas_params)
-    engine = create_engine(pg_uri)
-    result = df.to_sql(table, con=engine, schema=schema,if_exists='replace')
-    csv_byteIO.close()
+def import_csv_2_pg(csv_file, pg_uri, schema, table, pandas_params):
+    try:
+        df = pd.read_csv(csv_file, **pandas_params)
+        engine = create_engine(pg_uri)
+        result = df.to_sql(table, con=engine, schema=schema,if_exists='replace')
+        return True
+    except Exception as e:
+        raise(e)
 
  
 def import_ogr_2_pg(ogr_file, pg_uri_ogr_style, schema, table, ogr_params):

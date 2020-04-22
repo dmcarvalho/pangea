@@ -4,9 +4,9 @@ from rest_framework import permissions
 from django.contrib.auth.models import User, Group, Permission
 from .serializers import UserSerializer, GroupSerializer, PermissionSerializer
 
-from .models import LayerStatus, Column, BasicTerritorialLevelLayer
+from .models import LayerStatus, Column, BasicTerritorialLevelLayer, ComposedTerritorialLevelLayer
 
-from .serializers import LayerStatusSerializer, ColumnSerializer, BasicTerritorialLevelLayerSerializer
+from .serializers import LayerStatusSerializer, ColumnSerializer, BasicTerritorialLevelLayerSerializer, ComposedTerritorialLevelLayerSerializer
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -59,6 +59,15 @@ class BasicTerritorialLevelLayerViewSet(viewsets.ModelViewSet):
     """
     queryset = BasicTerritorialLevelLayer.objects.all()
     serializer_class = BasicTerritorialLevelLayerSerializer
+    permission_classes = [permissions.IsAdminUser, permissions.DjangoModelPermissions]
+
+
+class ComposedTerritorialLevelLayerViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows groups to be viewed or edited.
+    """
+    queryset = ComposedTerritorialLevelLayer.objects.all()
+    serializer_class = ComposedTerritorialLevelLayerSerializer
     permission_classes = [permissions.IsAdminUser, permissions.DjangoModelPermissions]
 
 

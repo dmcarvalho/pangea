@@ -30,14 +30,6 @@ fs = FileSystemStorage(location=settings.MEDIA_ROOT)
 #     quotechar = models.CharField(max_length=1, null=True, blank=True)
 #     decimal = models.CharField(max_length=1, default='.')
 
-
-
-
-
-
-
-
-
 # class LayerMetadata(models.Model):
 #     layer_name = models.CharField(max_length=200)
 #     data_imported = models.ForeignKey(ImportedData, on_delete=models.CASCADE)
@@ -75,6 +67,10 @@ class Layer(models.Model):
     zoom_min = models.ForeignKey(GeneralizationParams, on_delete=models.CASCADE, related_name='zoom_min', null=True, blank=True)
     zoom_max = models.ForeignKey(GeneralizationParams, on_delete=models.CASCADE, related_name='zoom_max', null=True, blank=True)
     
+    def __str__(self):
+        return self.name
+
+
     @property
     def status(self):
         status = self.layerstatus_set.all().latest('date')
@@ -112,18 +108,15 @@ class BasicTerritorialLevelLayer(Layer):
     topo_geom_column_name = models.CharField(max_length=200, null=True, blank=True)    
 
 
-
-'''
-class ComposedTerritorialLevelLayer(TerritorialLevelLayer):
-    is_a_composition_of = models.ForeignKey(TerritorialLevelLayer, on_delete=models.CASCADE)
+class ComposedTerritorialLevelLayer(Layer):
+    is_a_composition_of = models.ForeignKey(BasicTerritorialLevelLayer, on_delete=models.CASCADE)
 
     delimiter = models.CharField(max_length=1, default=',')
     quotechar = models.CharField(max_length=1, null=True, blank=True)
     decimal = models.CharField(max_length=1, default='.')
-
     composition_column = models.CharField(max_length=200)
 
-
+'''
 class CartographicLayer(BasicTerritorialLevelLayer):
     pass
 
