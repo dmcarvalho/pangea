@@ -4,7 +4,7 @@ set -e
 
 until PGPASSWORD=$PANGEA_DB_PASS psql -h $PANGEA_DB_HOST -p $PANGEA_DB_PORT -U $PANGEA_DB_USER $PANGEA_DB_NAME -c '\q'; do
   echo "Postgres is unavailable - sleeping"
-  sleep 1
+  sleep 5
 done
 
 PGPASSWORD=$PANGEA_DB_PASS psql -h $PANGEA_DB_HOST -p $PANGEA_DB_PORT -U $PANGEA_DB_USER $PANGEA_DB_NAME -c 'CREATE SCHEMA IF NOT EXISTS imported_data;' -c '\q';
