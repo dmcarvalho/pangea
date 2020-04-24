@@ -21,10 +21,10 @@ python manage.py migrate
 
 
 echo "Adding generalizationparams data"
-PGPASSWORD=$PANGEA_DB_PASS psql -h $PANGEA_DB_HOST -p $PANGEA_DB_PORT -U $PANGEA_DB_USER $PANGEA_DB_NAME -f scripts/database/pangea_admin_generalizationparams.sql
+PGPASSWORD=$PANGEA_DB_PASS psql -h $PANGEA_DB_HOST -p $PANGEA_DB_PORT -U $PANGEA_DB_USER $PANGEA_DB_NAME -f data/pangea_admin_generalizationparams.sql
 
 echo "Adding functions"
-PGPASSWORD=$PANGEA_DB_PASS psql -h $PANGEA_DB_HOST -p $PANGEA_DB_PORT -U $PANGEA_DB_USER $PANGEA_DB_NAME -f scripts/database/functions.sql
+PGPASSWORD=$PANGEA_DB_PASS psql -h $PANGEA_DB_HOST -p $PANGEA_DB_PORT -U $PANGEA_DB_USER $PANGEA_DB_NAME -f data/functions.sql
 
 
 # Creating admin
