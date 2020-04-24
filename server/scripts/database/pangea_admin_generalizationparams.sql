@@ -1,22 +1,20 @@
-DELETE FROM public.pangea_admin_generalizationparams;
-INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES 
-(0,1.00726431616991),
-(1,0.503632158),
-(2,0.251816079),
-(3,0.125908040),
-(4,0.062954020),
-(5,0.031477010),
-(6,0.015738505),
-(7,0.007869252),
-(8,0.003934626),
-(9,0.001967313),
-(10,0.000983657),
-(11,0.000491828),
-(12,0.000245914),
-(13,0.000122957),
-(14,0.000061479),
-(15,0.000030739),
-(16,0.000015370),
-(17,0.000007685),
-(18,0.000003842),
-(19,0.000001921);
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (0,1.00726431616991) ON CONFLICT (zoom_level) DO NOTHING;
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (1,0.503632158) ON CONFLICT (zoom_level) DO NOTHING;
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (2,0.251816079) ON CONFLICT (zoom_level) DO NOTHING;
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (3,0.125908040) ON CONFLICT (zoom_level) DO NOTHING;
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (4,0.062954020) ON CONFLICT (zoom_level) DO NOTHING;
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (5,0.031477010) ON CONFLICT (zoom_level) DO NOTHING;
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (6,0.015738505) ON CONFLICT (zoom_level) DO NOTHING;
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (7,0.007869252) ON CONFLICT (zoom_level) DO NOTHING;
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (8,0.003934626) ON CONFLICT (zoom_level) DO NOTHING;
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (9,0.001967313) ON CONFLICT (zoom_level) DO NOTHING;
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (10,0.000983657) ON CONFLICT (zoom_level) DO NOTHING;
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (11,0.000491828) ON CONFLICT (zoom_level) DO NOTHING;
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (12,0.000245914) ON CONFLICT (zoom_level) DO NOTHING;
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (13,0.000122957) ON CONFLICT (zoom_level) DO NOTHING;
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (14,0.000061479) ON CONFLICT (zoom_level) DO NOTHING;
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (15,0.000030739) ON CONFLICT (zoom_level) DO NOTHING;
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (16,0.000015370) ON CONFLICT (zoom_level) DO NOTHING;
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (17,0.000007685) ON CONFLICT (zoom_level) DO NOTHING;
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (18,0.000003842) ON CONFLICT (zoom_level) DO NOTHING;
+INSERT INTO public.pangea_admin_generalizationparams (zoom_level,factor) VALUES (19,0.000001921) ON CONFLICT (zoom_level) DO NOTHING;

@@ -19,6 +19,14 @@ python manage.py makemigrations
 echo "Apply database migrations"
 python manage.py migrate
 
+
+echo "Adding generalizationparams data"
+PGPASSWORD=$PANGEA_DB_PASS psql -h $PANGEA_DB_HOST -p $PANGEA_DB_PORT -U $PANGEA_DB_USER $PANGEA_DB_NAME -f scripts/database/pangea_admin_generalizationparams.sql
+
+echo "Adding functions"
+PGPASSWORD=$PANGEA_DB_PASS psql -h $PANGEA_DB_HOST -p $PANGEA_DB_PORT -U $PANGEA_DB_USER $PANGEA_DB_NAME -f scripts/database/functions.sql
+
+
 # Creating admin
 echo "Creating admin"
 python -m django_createsuperuser "$PANGEA_ADM_USER" "$PANGEA_ADM_PASS"
