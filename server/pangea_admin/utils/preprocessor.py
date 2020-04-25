@@ -8,8 +8,8 @@ def pre_process_basic_territorial_level_layer(layer):
         return {"error": "Before this action you must create a topology!"}
     if layer.status >= LayerStatus.Status.LAYER_PRE_PROCESSED:
         return {'error': 'This action has been executed!'}
-    zoom_min = layer.zoom_min
-    zoom_max = layer.zoom_max
+    zoom_min = layer.zoom_min.zoom_level
+    zoom_max = layer.zoom_max.zoom_level
     geocod = layer.geocod_column
     topo_geom_column_name = layer.topo_geom_column_name
     table_name = layer.table_name
@@ -58,8 +58,8 @@ def pre_process_composed_territorial_level_layer(layer):
     columns = ', '.join(colunms)
     colunms_group_by = ', '.join(colunms_group_by)
    
-    zoom_min = layer.zoom_min
-    zoom_max = layer.zoom_max
+    zoom_min = layer.zoom_min.zoom_level
+    zoom_max = layer.zoom_max.zoom_level
     geocod = layer.geocod_column
     if not zoom_min or not zoom_max or not geocod:
         return {"error": "Before this action you must define zoom parameters and geocod_column!"}
