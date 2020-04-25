@@ -90,13 +90,14 @@ def pre_process_layer(request, layer_id):
     response = None
     if len(layers) == 1:
         layer = layers[0]
-        if hasattr(layer, 'composedterritoriallevellayer'):
+        if hasattr(layer, 'basicterritoriallevellayer'):
+            layer = layer.basicterritoriallevellayer
+            response = pre_process_basic_territorial_level_layer(layer)
+            
+        elif hasattr(layer, 'composedterritoriallevellayer'):
             layer = layer.composedterritoriallevellayer
             response = pre_process_composed_territorial_level_layer(layer)
 
-        elif hasattr(layer, 'basicterritoriallevellayer'):
-            layer = layer.basicterritoriallevellayer
-            response = pre_process_basic_territorial_level_layer(layer)
         elif hasattr(layer, 'choroplethlayer'):
             layer = layer.choroplethlayer
             response = pre_process_choroplethlayer_level_layer(layer)

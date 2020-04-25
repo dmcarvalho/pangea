@@ -13,7 +13,7 @@ class GeneralizationParams(models.Model):
     factor = models.FloatField()
 
     def __str__(self):
-        return '%s' % self.zoom_level
+        return '%s - %s - meters' % (self.zoom_level, round(self.factor * 111319.490793, 2))
 
 
 class Layer(models.Model):
