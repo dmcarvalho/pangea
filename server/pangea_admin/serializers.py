@@ -14,6 +14,10 @@ from .models import LayerStatus, Column, LayerStatus, BasicTerritorialLevelLayer
 
 GENERIC_ERROR = "An error occurred while processing your request. Maybe, it can help you: %s"
 
+def generate_safe_name(name):
+    return unidecode.unidecode('tb_{0}'.format(name)).replace(' ', '_').replace('-', '_').lower()
+
+
 class PermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Permission
@@ -65,7 +69,8 @@ class BasicTerritorialLevelLayerSerializer(serializers.ModelSerializer):
             "encoding": validated_data['encoding'],
             "srid": validated_data['srid']
         }
-        table_name = unidecode.unidecode('tb_{0}'.format(validated_data['name']))
+        
+        table_name = generate_safe_name(validated_data['name'])
         validated_data['table_name'] = table_name
         validated_data['schema_name'] = PANGEA_IMPORTED_DATA_SCHEMA
 
@@ -84,14 +89,17 @@ class BasicTerritorialLevelLayerSerializer(serializers.ModelSerializer):
                 layer.geom_type = geometry_type
                 layer.save()
 
-            else:
-                raise Exception('Ocorreu um erro')
-
+                columns = get_colunms(PANGEA_IMPORTED_DATA_SCHEMA, table_name)
+                for column in columns:
+                    if not column['column'] in [geometry_column, layer.geocod_column, 'ogc_fid']:
+                        data = {"layer":layer,
+                                "name": column['column'],
+                                "alias": generate_safe_name(column['column'])                   
+                                }
+                        Column.objects.create(**data)
 
         except Exception as e:
-            layer.delete()
             raise serializers.ValidationError(GENERIC_ERROR % e)
-
         return layer
 
     @transaction.atomic
@@ -101,7 +109,7 @@ class BasicTerritorialLevelLayerSerializer(serializers.ModelSerializer):
                 Column.objects.filter(layer=instance.id).delete()
                 column_set = validated_data.pop('column_set')
                 for column in column_set:
-                    column["layer"] = instance
+                    column["layer"] = instance                    
                     Column.objects.create(**column)
             except Exception as e:
                 raise(e)
@@ -121,7 +129,7 @@ class ComposedTerritorialLevelLayerSerializer(serializers.ModelSerializer):
     
     @transaction.atomic
     def create(self, validated_data):
-        table_name = unidecode.unidecode('tb_{0}'.format(validated_data['name']))
+        table_name = generate_safe_name(validated_data['name'])
         validated_data['table_name'] = table_name
         validated_data['schema_name'] = PANGEA_IMPORTED_DATA_SCHEMA
 
@@ -144,7 +152,15 @@ class ComposedTerritorialLevelLayerSerializer(serializers.ModelSerializer):
             import_csv_2_pg(layer._file.path, PANGEA_DB_URI,
                             PANGEA_IMPORTED_DATA_SCHEMA, table_name, pandas_params)
 
-            
+            columns = get_colunms(PANGEA_IMPORTED_DATA_SCHEMA, table_name)
+            for column in columns:
+                if not column['column'] in [geometry_column, layer.geocod_column, 'ogc_fid']:
+                    data = {"layer":layer,
+                            "name": column['column'],
+                            "alias": generate_safe_name(column['column'])
+                            }
+                    Column.objects.create(**data)
+
         except Exception as e:
             layer.delete()
             raise serializers.ValidationError(GENERIC_ERROR % e)
@@ -181,7 +197,7 @@ class ChoroplethLayerSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         
-        table_name = unidecode.unidecode('tb_{0}'.format(validated_data['name']))
+        table_name = generate_safe_name(validated_data['name'])
         validated_data['table_name'] = table_name
         validated_data['schema_name'] = PANGEA_IMPORTED_DATA_SCHEMA
 
@@ -206,11 +222,12 @@ class ChoroplethLayerSerializer(serializers.ModelSerializer):
 
             columns = get_colunms(PANGEA_IMPORTED_DATA_SCHEMA, table_name)
             for column in columns:
-                data = {"layer":layer,
-                        "name": column['column'],
-                        "alias": column['column']                    
-                        }
-                Column.objects.create(**data)
+                if not column['column'] in [ layer.geocod_column, 'index']:
+                    data = {"layer":layer,
+                            "name": column['column'],
+                            "alias": generate_safe_name(column['column'])
+                            }
+                    Column.objects.create(**data)
 
         except Exception as e:
             raise serializers.ValidationError(GENERIC_ERROR % e)
