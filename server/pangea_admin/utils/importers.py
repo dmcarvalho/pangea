@@ -48,6 +48,6 @@ def import_ogr_2_pg(ogr_file, pg_uri_ogr_style, schema, table, ogr_params):
             raise Exception('The ziped file must contains a file in one of this formats: {0}'.format(','.join(geo_formats)))
     srid = ogr_params['srid']
     encoding = ogr_params['encoding']
-    result = main(['', '-nlt', 'PROMOTE_TO_MULTI', '-lco', 'OVERWRITE=YES', '-lco', 'SCHEMA={0}'.format(schema), '-f', 'PostgreSQL', pg_uri_ogr_style, ogr_file, '-nln', table, '-t_srs', 'EPSG:{0}'.format(srid)])
+    result = main(['', '-nlt', 'PROMOTE_TO_MULTI', '-lco', 'OVERWRITE=YES', '-lco', 'SCHEMA={0}'.format(schema), '-f', 'PostgreSQL', pg_uri_ogr_style, ogr_file, '-nln', table, '-t_srs', 'EPSG:{0}'.format(srid)], '-geomfield', 'geom')
     shutil.rmtree(tmp_dir)
     return result
