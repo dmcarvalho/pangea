@@ -224,23 +224,41 @@ def _pre_process_choroplethlayer_level_layer(params):
 
 def _get_layers(host):
     query = "\
-            select\
+            select json_agg(layer) from (select\
             json_build_object( \
-                pangea_admin_layer.name, json_build_object( \
+			pangea_admin_layer.id, json_build_object( \
+			'name', pangea_admin_layer.name,\
                         'description', pangea_admin_layer.description, 'fields',json_build_object( \
-                            'geocod', pangea_admin_layer.geocod_column, 'dimension', \
-                            pangea_admin_basicterritoriallevellayer.dimension_column, \
+                            'gid', pangea_admin_layer.geocod_column, 'dimension', \
+                            l.dimension_column, \
                             'attributes', columns_.fields, \
-                            'geom', pangea_admin_basicterritoriallevellayer.topo_geom_column_name, \
-                            'geom_type', pangea_admin_basicterritoriallevellayer.geom_type, \
-                            'srid', pangea_admin_basicterritoriallevellayer.srid, \
+                            'geom', 'geom', \
+                            'geom_type', l.geom_type, \
+                            'srid', l.srid, \
                             'enconding', 'utf8'),\
                         'zoom_min', pangea_admin_layer.zoom_min_id, \
                         'zoom_max', pangea_admin_layer.zoom_max_id,\
-                        'host', '%s' ||  pangea_admin_layer.name || '/{z}/{x}/{y}.mvt'))\
+                        'host', '%s' ||  pangea_admin_layer.name || '/{z}/{x}/{y}.mvt')) as layer\
             from\
             public.pangea_admin_layer \
-            inner join public.pangea_admin_basicterritoriallevellayer on pangea_admin_basicterritoriallevellayer.layer_ptr_id = pangea_admin_layer.id \
+            inner join ( select b.layer_ptr_id, b.dimension_column, b.geom_type, b.srid\
+			from public.pangea_admin_basicterritoriallevellayer b\
+			union\
+		select c.layer_ptr_id, b.dimension_column, b.geom_type, b.srid\
+		from public.pangea_admin_composedterritoriallevellayer c,\
+		     public.pangea_admin_basicterritoriallevellayer b\
+		where c.is_a_composition_of_id = b.layer_ptr_id\
+		union\
+		select c.layer_ptr_id, b.dimension_column, b.geom_type, b.srid\
+		from public.pangea_admin_choroplethlayer as c\
+		inner join (select b.layer_ptr_id, b.dimension_column,	b.geom_type, b.srid\
+		from public.pangea_admin_basicterritoriallevellayer b\
+		union\
+		select c.layer_ptr_id, b.dimension_column, b.geom_type, b.srid\
+		from public.pangea_admin_composedterritoriallevellayer c,\
+		public.pangea_admin_basicterritoriallevellayer b\
+		where c.is_a_composition_of_id = b.layer_ptr_id) as b on \
+		c.layer_id = b.layer_ptr_id ) as l on l.layer_ptr_id = pangea_admin_layer.id \
             inner join public.pangea_admin_layerstatus on pangea_admin_layerstatus.layer_id = pangea_admin_layer.id\
             left join \
             (\
@@ -258,7 +276,8 @@ def _get_layers(host):
                 pangea_admin_layer.id ) as columns_\
             on columns_.id = pangea_admin_layer.id\
             where\
-            pangea_admin_layerstatus.status = 8;" % (host)
+            pangea_admin_layerstatus.status = 8\
+	    order by  pangea_admin_layer.id) as foo;" % (host)
     layers = get_anything(query)[0][0]
     return layers
 
