@@ -2,6 +2,7 @@ from django.contrib.gis.db import models
 from pangea import settings
 
 # Create your models here.
+from .utils.utils import generate_safe_name
 
 from django.core.files.storage import FileSystemStorage
 
@@ -20,6 +21,8 @@ class Layer(models.Model):
     name = models.CharField(max_length=200, unique=True)    
     description = models.TextField(null=True, blank=True)
     metadata = models.URLField(null=True, blank=True)
+
+    force_whithout_topology = models.BooleanField(default=False)
 
     _file = models.FileField(storage=fs)
     schema_name = models.CharField(max_length=200, null=True, blank=True)
@@ -52,7 +55,10 @@ class Column(models.Model):
 
     def save(self, *args, **kwargs):
         if self.alias == '' or self.alias == None:
-            self.alias = self.name
+            self.alias = generate_safe_name(self.name)
+        else:
+            self.alias = generate_safe_name(self.alias)
+
         super(Column, self).save(*args, **kwargs)    
 
 

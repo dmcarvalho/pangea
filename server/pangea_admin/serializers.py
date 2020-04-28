@@ -1,5 +1,4 @@
 import copy
-import unidecode
 
 from django.db import transaction, IntegrityError
 from django.contrib.auth.models import User, Group, Permission
@@ -9,13 +8,12 @@ from rest_framework import serializers
 from pangea.settings import PANGEA_DB_URI, PANGEA_DB_URI_OGR_STYLE, PANGEA_IMPORTED_DATA_SCHEMA
 from .utils.database_information import get_geometry_column, get_geometry_type, get_colunms
 from .utils.importers import import_csv_2_pg, import_ogr_2_pg
+from .utils.utils import generate_safe_name
+
 from .models import LayerStatus, Column, LayerStatus, BasicTerritorialLevelLayer, ComposedTerritorialLevelLayer, ChoroplethLayer
 
 
 GENERIC_ERROR = "An error occurred while processing your request. Maybe, it can help you: %s"
-
-def generate_safe_name(name):
-    return unidecode.unidecode('tb_{0}'.format(name)).replace(' ', '_').replace('-', '_').lower()
 
 
 class PermissionSerializer(serializers.ModelSerializer):
@@ -60,7 +58,7 @@ class BasicTerritorialLevelLayerSerializer(serializers.ModelSerializer):
     class Meta:
         model = BasicTerritorialLevelLayer
         fields = ['id', 'name', 'description', 'metadata', '_file',
-                  'srid', 'geocod_column', 'dimension_column',
+                  'force_whithout_topology', 'srid', 'geocod_column', 'dimension_column',
                   'encoding', 'zoom_min', 'zoom_max', 'column_set', 'layerstatus_set']
 
     @transaction.atomic
@@ -70,7 +68,7 @@ class BasicTerritorialLevelLayerSerializer(serializers.ModelSerializer):
             "srid": validated_data['srid']
         }
         
-        table_name = generate_safe_name(validated_data['name'])
+        table_name = 'tb_' + generate_safe_name(validated_data['name'])
         validated_data['table_name'] = table_name
         validated_data['schema_name'] = PANGEA_IMPORTED_DATA_SCHEMA
 
@@ -129,7 +127,7 @@ class ComposedTerritorialLevelLayerSerializer(serializers.ModelSerializer):
     
     @transaction.atomic
     def create(self, validated_data):
-        table_name = generate_safe_name(validated_data['name'])
+        table_name = 'tb_' + generate_safe_name(validated_data['name'])
         validated_data['table_name'] = table_name
         validated_data['schema_name'] = PANGEA_IMPORTED_DATA_SCHEMA
 
@@ -154,7 +152,7 @@ class ComposedTerritorialLevelLayerSerializer(serializers.ModelSerializer):
 
             columns = get_colunms(PANGEA_IMPORTED_DATA_SCHEMA, table_name)
             for column in columns:
-                if not column['column'] in [geometry_column, layer.geocod_column, 'ogc_fid']:
+                if not column['column'] in [layer.composition_column, layer.geocod_column, 'index']:
                     data = {"layer":layer,
                             "name": column['column'],
                             "alias": generate_safe_name(column['column'])
@@ -197,9 +195,15 @@ class ChoroplethLayerSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         
-        table_name = generate_safe_name(validated_data['name'])
+        table_name = 'tb_' + generate_safe_name(validated_data['name'])
         validated_data['table_name'] = table_name
         validated_data['schema_name'] = PANGEA_IMPORTED_DATA_SCHEMA
+
+        if('layer' in validated_data):
+            lyr = validated_data['layer']
+            validated_data['zoom_min']  = lyr.zoom_min
+            validated_data['zoom_max'] = lyr.zoom_max
+
 
         try:
             layer = ChoroplethLayer.objects.create(
@@ -236,6 +240,11 @@ class ChoroplethLayerSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
+        if('layer' in validated_data):
+            lyr = validated_data['layer']
+            validated_data['zoom_min']  = lyr.zoom_min
+            validated_data['zoom_max'] = lyr.zoom_max
+
         if 'column_set' in validated_data:
             try:
                 Column.objects.filter(layer=instance.id).delete()

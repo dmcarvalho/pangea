@@ -1,9 +1,48 @@
 from django.conf import settings
 from .database_information import _pre_process_basic_territorial_level_layer,\
-    _pre_process_composed_territorial_level_layer, _pre_process_choroplethlayer_level_layer
+    _pre_process_composed_territorial_level_layer, _pre_process_choroplethlayer_level_layer,\
+    _pre_process_basic_territorial_level_layer_whithout_topology,\
+    _pre_process_choroplethlayer_level_layer_whithout_topology        
 from ..models import LayerStatus
 
+def pre_process_basic_territorial_level_layer_whithout_topology(layer):
+
+    if layer.status >= LayerStatus.Status.LAYER_PRE_PROCESSED:
+        return {'error': 'This action has been executed!'}
+    geocod = layer.geocod_column
+    geom_column = layer.geom_column
+    table_name = layer.table_name
+    colunms = []
+    for column in layer.column_set.all():
+        colunms.append('%s.%s as %s,' % (layer.table_name, column.name, column.alias))
+    columns = ' '.join(colunms)
+
+    if not geocod:
+        return {"error": "Before this action you must define geocod_column!"}
+    try:
+        params = {
+            "imported_data_schema": settings.PANGEA_IMPORTED_DATA_SCHEMA,
+            "layers_published_schema": settings.PANGEA_LAYERS_PUBLISHED_SCHEMA,
+            "table_name": table_name,
+            "geocod": geocod,
+            "geom_column": geom_column,
+            "columns": columns
+        }
+        _pre_process_basic_territorial_level_layer_whithout_topology(params)
+        layer_status = {'layer': layer,
+                        'status': LayerStatus.Status.LAYER_PRE_PROCESSED}
+        LayerStatus.objects.create(**layer_status)
+
+        return {'result': "Success"}
+    except Exception as e:
+        if e.orig.pgcode == '42P07':
+            return {'error': 'This action has been executed!'}
+        return {'error': e.orig.pgerror}
+
 def pre_process_basic_territorial_level_layer(layer):
+    if layer.force_whithout_topology:
+        return pre_process_basic_territorial_level_layer_whithout_topology(layer)
+    
     if layer.status < LayerStatus.Status.TOPOLOGY_CREATED:
         return {"error": "Before this action you must create a topology!"}
     if layer.status >= LayerStatus.Status.LAYER_PRE_PROCESSED:
@@ -42,6 +81,7 @@ def pre_process_basic_territorial_level_layer(layer):
             return {'error': 'This action has been executed!'}
         return {'error': e.orig.pgerror}
 
+
 def pre_process_composed_territorial_level_layer(layer):
     base_layer = layer.is_a_composition_of
     if base_layer.status < LayerStatus.Status.TOPOLOGY_CREATED:
@@ -52,11 +92,11 @@ def pre_process_composed_territorial_level_layer(layer):
     colunms = []
     colunms_group_by = []
     for column in layer.column_set.all():
-        colunms.append('%s.%s as %s' % (layer.table_name, column.name, column.alias))
-        colunms_group_by.append('%s.%s' % (layer.table_name, column.name))
+        colunms.append('%s.%s as %s,' % (layer.table_name, column.name, column.alias))
+        colunms_group_by.append(', %s.%s' % (layer.table_name, column.name))
 
-    columns = ', '.join(colunms)
-    colunms_group_by = ', '.join(colunms_group_by)
+    columns = ' '.join(colunms)
+    colunms_group_by = ' '.join(colunms_group_by)
    
     zoom_min = layer.zoom_min.zoom_level
     zoom_max = layer.zoom_max.zoom_level
@@ -98,20 +138,20 @@ def pre_process_choroplethlayer_level_layer(layer):
 
 
     base_layer = layer.layer
-    if base_layer.status < LayerStatus.Status.TOPOLOGY_CREATED:
+    if base_layer.status < LayerStatus.Status.TOPOLOGY_CREATED and not base_layer.force_whithout_topology:
         return {"error": "Before this action you must create a topology in a base layer: %s!" % layer.name}
     if base_layer.status < LayerStatus.Status.LAYER_PRE_PROCESSED:
         return {'error': 'Before this action you must preprocess a base layer: %s!'}        
 
     colunms = []
     for column in layer.column_set.all():
-        colunms.append('%s.%s as %s' % (layer.table_name, column.name, column.alias))
-    columns = ', '.join(colunms)
+        colunms.append('%s.%s as %s,' % (layer.table_name, column.name, column.alias))
+    columns = ' '.join(colunms)
 
     base_colunms = []
     for column in base_layer.column_set.all():
-        base_colunms.append('%s.%s as %s' % (base_layer.table_name, column.name, column.alias))
-    base_colunms = ', '.join(base_colunms)    
+        base_colunms.append('%s.%s as %s,' % (base_layer.table_name, column.name, column.alias))
+    base_colunms = ' '.join(base_colunms)    
    
 
     geocod = layer.geocod_column
@@ -130,7 +170,10 @@ def pre_process_choroplethlayer_level_layer(layer):
             "base_colunms": base_colunms,
             "base_geocod": base_layer.geocod_column,
         }
-        _pre_process_choroplethlayer_level_layer(params)
+        if base_layer.force_whithout_topology:
+            _pre_process_choroplethlayer_level_layer_whithout_topology(params)
+        else:
+            _pre_process_choroplethlayer_level_layer(params)
         layer_status = {'layer': layer,
                         'status': LayerStatus.Status.LAYER_PRE_PROCESSED}
         LayerStatus.objects.create(**layer_status)

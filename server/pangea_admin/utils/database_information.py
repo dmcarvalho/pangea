@@ -135,17 +135,23 @@ def _populate_topology(params):
     execute_anything(query)
     return True
 
-def create_index(params):
+def create_index(params, zoom_index=True):
     try:
         query = "CREATE INDEX {table_name}_geom_idx \
                     ON {layers_published_schema}.{table_name} \
                     USING GIST (geom);".format(**params)
         execute_anything(query)
 
-        query = "CREATE INDEX {table_name}_zoom_level_idx \
+        query = "CREATE INDEX {table_name}_{geocod}_idx \
                     ON {layers_published_schema}.{table_name} \
-                    USING btree (zoom_level)".format(**params)
-        execute_anything(query)            
+                    USING btree ({geocod})".format(**params)  
+
+        execute_anything(query)  
+        if zoom_index:
+            query = "CREATE INDEX {table_name}_zoom_level_idx \
+                        ON {layers_published_schema}.{table_name} \
+                        USING btree (zoom_level)".format(**params)
+            execute_anything(query)  
         return True
     except Exception as e:
         raise(e)    
@@ -174,6 +180,23 @@ def _pre_process_basic_territorial_level_layer(params):
         raise(e)
 
 
+def _pre_process_basic_territorial_level_layer_whithout_topology(params):
+    """
+    imported_data_schema, layers_published_schema, table_name, geocod, topo_geom_column_name, zoom_min, zoom_max, columns
+    """
+    try:
+        query = '\
+        CREATE TABLE {layers_published_schema}.{table_name} as SELECT ogc_fid, {geocod}, {columns} \
+            st_transform({table_name}.{geom_column}, 3857) as geom\
+        FROM\
+            {imported_data_schema}.{table_name};'.format(**params)
+        execute_anything(query)
+        create_index(params, False)           
+        return True
+    except Exception as e:
+        raise(e)
+
+
 def _pre_process_composed_territorial_level_layer(params):
     """
     """
@@ -182,7 +205,7 @@ def _pre_process_composed_territorial_level_layer(params):
             CREATE TABLE {layers_published_schema}.{table_name} as SELECT\
                 pangea_admin_generalizationparams.zoom_level,\
                 {table_name}.{geocod}, \
-                {columns},\
+                {columns}\
                 st_transform(st_union(topology.ST_Simplify({base_table_name}.{topo_geom_column_name}, pangea_admin_generalizationparams.factor)), 3857) as geom\
             FROM \
                 {imported_data_schema}.{table_name}, \
@@ -191,13 +214,33 @@ def _pre_process_composed_territorial_level_layer(params):
             WHERE \
                 {table_name}.{composition_column} = {base_table_name}.{base_geocod} AND\
                 pangea_admin_generalizationparams.zoom_level >= {zoom_min} and pangea_admin_generalizationparams.zoom_level < {zoom_max}\
-            group by   pangea_admin_generalizationparams.zoom_level,{table_name}.{geocod}, {colunms_group_by};'.format(**params)
+            group by   pangea_admin_generalizationparams.zoom_level,{table_name}.{geocod} {colunms_group_by};'.format(**params)
         execute_anything(query)
         create_index(params)           
         return True
     except Exception as e:
         raise(e)
 
+def _pre_process_choroplethlayer_level_layer_whithout_topology(params):
+    """
+    """
+    try:
+        query = '\
+            CREATE TABLE {layers_published_schema}.{table_name} AS\
+            SELECT \
+                {base_table_name}.ogc_fid,\
+                {table_name}.{geocod}, \
+                {columns}\
+                {base_table_name}.geom\
+            FROM \
+                {imported_data_schema}.{table_name} INNER JOIN {layers_published_schema}.{base_table_name}\
+            ON\
+                {table_name}.{geocod} = {base_table_name}.{base_geocod};'.format(**params)
+        execute_anything(query)
+        create_index(params, False)           
+        return True
+    except Exception as e:
+        raise(e)
 
 def _pre_process_choroplethlayer_level_layer(params):
     """
@@ -207,9 +250,8 @@ def _pre_process_choroplethlayer_level_layer(params):
             CREATE TABLE {layers_published_schema}.{table_name} AS\
             SELECT \
                 {base_table_name}.zoom_level, \
-                {base_colunms},\
                 {table_name}.{geocod}, \
-                {columns},\
+                {columns}\
                 {base_table_name}.geom\
             FROM \
                 {imported_data_schema}.{table_name} INNER JOIN {layers_published_schema}.{base_table_name}\
@@ -299,3 +341,22 @@ def get_mvt(params):
         and st_intersects(t.box, {table_name}.geom)) as q;".format(**params)
     mvt = get_anything(query)[0][0]
     return mvt
+
+def get_mvt_whithout_topology(params):
+    query = "\
+    select\
+        st_asmvt(q, '{layer_name}', 4096, 'geom', 'ogc_fid') as mvt \
+    from\
+        (with t as (select  TileBBox({z},{x},{y}) as box) \
+        select\
+            ogc_fid,\
+            {geocod},\
+            {fields}\
+        st_asmvtgeom({table_name}.geom, t.box, 4096, 256, true) as geom\
+        from\
+        {schema_name}.{table_name}, t\
+        where\
+            t.box && {table_name}.geom \
+            and st_intersects(t.box, {table_name}.geom)) as q;".format(**params)
+    mvt = get_anything(query)[0][0]
+    return mvt    

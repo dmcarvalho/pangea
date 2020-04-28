@@ -6,7 +6,7 @@ import gzip
 
 from .utils.database_information import get_schemas, get_tables, get_colunms,\
     _create_topology, _create_layer_topology,\
-    _populate_topology, _drop_topology, _get_layers, get_mvt
+    _populate_topology, _drop_topology, _get_layers, get_mvt, get_mvt_whithout_topology
 
 from .utils.preprocessor import pre_process_basic_territorial_level_layer, pre_process_composed_territorial_level_layer, pre_process_choroplethlayer_level_layer
 from .models import LayerStatus, Layer, BasicTerritorialLevelLayer, ComposedTerritorialLevelLayer
@@ -38,6 +38,10 @@ def create_topology(request, layer_id):
         layer = layers[0]
         topology_name = 'topology_{0}'.format(layer.name)
         topo_geom_column_name = 'topo_{0}'.format(layer.geom_column)
+        
+        if layer.force_whithout_topology:
+            return JsonResponse({"error": "This layer is marked to not create topology."}, safe=False)
+
         if layer.status >= LayerStatus.Status.TOPOLOGY_CREATED:
             return JsonResponse({"error": "This layer already has a topology"}, safe=False)
         try:
@@ -123,8 +127,22 @@ def publish_layer(request, layer_id):
 
 
 def get_layers(request):
-    result = _get_layers('http://kicahost/')
+
+    scheme = request.is_secure() and "https" or "http"
+    host = f'{scheme}://{request.get_host()}/'    
+    result = _get_layers(host)
     return JsonResponse(result, safe=False)
+
+
+
+def force_whithout_topology(layer):
+    if layer.force_whithout_topology:
+        return True
+    elif hasattr(layer, 'choroplethlayer'):
+        layer = layer.choroplethlayer
+        return layer.layer.force_whithout_topology
+    else:
+        return False
 
 
 def mvt(request, layer_name, z, x, y):
@@ -143,7 +161,10 @@ def mvt(request, layer_name, z, x, y):
                     "table_name": layer.table_name,
                     "schema_name": settings.PANGEA_LAYERS_PUBLISHED_SCHEMA,
                 }
-                result = get_mvt(params)
+                if force_whithout_topology(layer):
+                    result = get_mvt_whithout_topology(params)
+                else:
+                    result = get_mvt(params)
                 response = HttpResponse(gzip.compress(
                     result), content_type='application/x-protobuf')
                 response['Content-Encoding'] = 'gzip'
