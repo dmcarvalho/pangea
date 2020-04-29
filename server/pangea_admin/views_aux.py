@@ -12,25 +12,25 @@ from .utils.preprocessor import pre_process_basic_territorial_level_layer, pre_p
 from .models import LayerStatus, Layer, BasicTerritorialLevelLayer, ComposedTerritorialLevelLayer
 
 
-#@login_required
+@login_required
 def _get_tables(request):
     response = get_tables(settings.PANGEA_IMPORTED_DATA_SCHEMA)
     return JsonResponse(response, safe=False)
 
 
-#@login_required
+@login_required
 def _get_geo_tables(request):
     response = get_tables(settings.PANGEA_IMPORTED_DATA_SCHEMA, True)
     return JsonResponse(response, safe=False)
 
 
-#@login_required
+@login_required
 def _get_colunms(request, table):
     response = get_colunms(settings.PANGEA_IMPORTED_DATA_SCHEMA, table)
     return JsonResponse(response, safe=False)
 
 
-## @login_required
+@login_required
 def create_topology(request, layer_id):
     topology_id, topology_name = '-1', 'erro'
     layers = BasicTerritorialLevelLayer.objects.filter(id=layer_id)
@@ -88,7 +88,7 @@ def create_topology(request, layer_id):
             return JsonResponse({"error": "It's not necessary create a topology for this kind of layer!"}, safe=False)
         return JsonResponse({"error": "Layer not Found"}, safe=False)
 
-
+@login_required
 def pre_process_layer(request, layer_id):
     layers = Layer.objects.filter(id=layer_id)
     response = None
@@ -109,7 +109,7 @@ def pre_process_layer(request, layer_id):
         response = {"error": "Layer not Found"}
     return JsonResponse(response, safe=False)
 
-
+@login_required
 def publish_layer(request, layer_id):
     layers = Layer.objects.filter(id=layer_id)
     if len(layers) == 1:
@@ -125,9 +125,8 @@ def publish_layer(request, layer_id):
     else:
         return JsonResponse({"error": "Layer not Found"}, safe=False)
 
-
+@login_required
 def get_layers(request):
-
     scheme = request.is_secure() and "https" or "http"
     host = f'{scheme}://{request.get_host()}/'    
     result = _get_layers(host)
