@@ -1,0 +1,45 @@
+version: '3.3'
+services:
+    db:
+        container_name: postgis_3
+        image: postgis/postgis
+        command: ["postgres", "-c", "logging_collector=on", "-c", "log_directory=/var/log/postgresql/", "-c", "log_filename=postgresql.log", "-c", "log_statement=all"]
+        restart: always
+        env_file:
+            - ./server/scripts/docker/production/db.env
+        volumes:
+            - ./data/production/pgdata:/var/lib/postgresql/data
+            - ./data/production/db-backup:/db-backup
+        expose:
+            - "5432"
+  
+    web:
+        build:
+            context: ./server
+            dockerfile: Dockerfile
+        depends_on:
+            - db            
+        expose:
+            - "8000"
+        volumes:
+            - ./server:/code        
+        command: "./docker-entrypoint.sh"
+        env_file:
+            - ./server/scripts/docker/production/pangea.env
+        links:
+            - db               
+
+    nginx:
+        #network_mode: "host"
+        restart: always
+        build: ./nginx/
+        volumes: 
+            - ./nginx/:/etc/nginx/conf.d
+            - ./server/logs/:/code/logs
+            - ./server/media:/code/media_cdn
+            - ./server/static:/code/static_cdn
+            - ./cache:/cache
+        ports: 
+            - "1337:80"
+        links:
+            - web              

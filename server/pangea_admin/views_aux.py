@@ -125,7 +125,6 @@ def publish_layer(request, layer_id):
     else:
         return JsonResponse({"error": "Layer not Found"}, safe=False)
 
-@login_required
 def get_layers(request):
     scheme = request.is_secure() and "https" or "http"
     host = f'{scheme}://{request.get_host()}/'    
