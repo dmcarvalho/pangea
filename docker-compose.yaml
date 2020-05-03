@@ -30,11 +30,9 @@ services:
             - db               
 
     nginx:
-        #network_mode: "host"
         restart: always
         build: ./nginx/
         volumes: 
-            - ./nginx/:/etc/nginx/conf.d
             - ./server/logs/:/code/logs
             - ./server/media:/code/media_cdn
             - ./server/static:/code/static_cdn
