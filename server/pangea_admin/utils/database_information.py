@@ -96,15 +96,20 @@ def getDistinctValues(schema, table, field):
 def _create_topology(topology_name, srid):
     query = "SELECT topology.CreateTopology('{0}', {1});".format(
         topology_name, srid)
-    topology_id = execute_anything(query)[0][0]
+    topology_id = execute_anything(query)
     return topology_name, topology_id
 
 
 def _drop_topology(topology_name):
-    query_create_topology = "SELECT topology.DropTopology('{0}');".format(
+    query = "SELECT topology.DropTopology('{0}');".format(
         topology_name)
     topology_name = execute_anything(query)[0][0]
     return topology_name
+
+def _drop_table(schema_name, table_name):
+    query = "DROP TABLE IF EXISTS {0}.{1};".format(
+        schema_name, table_name)
+    return execute_anything(query)
 
 
 def _create_layer_topology(params):
