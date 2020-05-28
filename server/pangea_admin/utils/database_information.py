@@ -218,7 +218,7 @@ def _pre_process_composed_territorial_level_layer(params):
                 pangea_admin_generalizationparams\
             WHERE \
                 {table_name}.{composition_column} = {base_table_name}.{base_geocod} AND\
-                pangea_admin_generalizationparams.zoom_level >= {zoom_min} and pangea_admin_generalizationparams.zoom_level < {zoom_max}\
+                pangea_admin_generalizationparams.zoom_level >= {zoom_min} and pangea_admin_generalizationparams.zoom_level <= {zoom_max}\
             group by   pangea_admin_generalizationparams.zoom_level,{table_name}.{geocod} {colunms_group_by};'.format(**params)
         execute_anything(query)
         create_index(params)           
@@ -341,7 +341,7 @@ def get_mvt(params):
         from\
         {schema_name}.{table_name}, t\
         where\
-            zoom_level = {z}\
+            zoom_level = {zoom_level}\
         and t.box && {table_name}.geom \
         and st_intersects(t.box, {table_name}.geom)) as q;".format(**params)
     mvt = get_anything(query)[0][0]

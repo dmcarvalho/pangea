@@ -148,25 +148,28 @@ def mvt(request, layer_name, z, x, y):
     if len(layers) == 1:
         layer = layers[0]        
         if layer.status == 8:
-            if layer.zoom_min.zoom_level <= int(z) and int(z) <= layer.zoom_max.zoom_level:
-                params = {
-                    "layer_name": layer.name,
-                    "geocod": layer.geocod_column,
-                    "z": z,
-                    "x": x,
-                    "y": y,
-                    "fields": layer.fields + ',' if len(layer.fields) > 0 else '',
-                    "table_name": layer.table_name,
-                    "schema_name": settings.PANGEA_LAYERS_PUBLISHED_SCHEMA,
-                }
-                if force_whithout_topology(layer):
-                    result = get_mvt_whithout_topology(params)
-                else:
-                    result = get_mvt(params)
-                response = HttpResponse(gzip.compress(
-                    result), content_type='application/x-protobuf')
-                response['Content-Encoding'] = 'gzip'
-                return response
+            z_min = layer.zoom_min.zoom_level 
+            z_max = layer.zoom_max.zoom_level
+            zoom_level = z if z_min <= int(z) and int(z) <= z_max else z_min if z_min > int(z) else z_max
+            params = {
+                "layer_name": layer.name,
+                "geocod": layer.geocod_column,
+                "z": z,
+                "x": x,
+                "y": y,
+                "fields": layer.fields + ',' if len(layer.fields) > 0 else '',
+                "table_name": layer.table_name,
+                "schema_name": settings.PANGEA_LAYERS_PUBLISHED_SCHEMA,
+                "zoom_level": zoom_level
+            }
+            if force_whithout_topology(layer):
+                result = get_mvt_whithout_topology(params)
+            else:
+                result = get_mvt(params)
+            response = HttpResponse(gzip.compress(
+                result), content_type='application/x-protobuf')
+            response['Content-Encoding'] = 'gzip'
+            return response
     response = HttpResponse(gzip.compress(b''), content_type='application/x-protobuf')
     response['Content-Encoding'] = 'gzip'
     return response    
