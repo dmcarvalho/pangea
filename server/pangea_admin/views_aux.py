@@ -76,9 +76,9 @@ def create_topology(request, layer_id):
 
             return JsonResponse({topology_id: topology_name}, safe=False)
         except Exception as e:
-            layer.topology_name = ''
-            layer.topology_layer_id = ''
-            layer.topo_geom_column_name = ''
+            layer.topology_name = None
+            layer.topology_layer_id = None
+            layer.topo_geom_column_name = None
             layer.save()
             _drop_topology(topology_name)
             return JsonResponse({"error": e}, safe=False)
@@ -127,7 +127,7 @@ def publish_layer(request, layer_id):
 
 def get_layers(request):
     scheme = request.is_secure() and "https" or "http"
-    host = f'{scheme}://{request.get_host()}/'    
+    host = f'{scheme}://{request.get_host()}/tile/'    
     result = _get_layers(host)
     return JsonResponse(result, safe=False)
 

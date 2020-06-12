@@ -4,9 +4,10 @@ from pangea import settings
 # Create your models here.
 from .utils.utils import generate_safe_name
 
-from .utils.database_information import _drop_table
+from .utils.database_information import _drop_table, _has_topology, _drop_topology
 
 from django.core.files.storage import FileSystemStorage
+import os
 
 fs = FileSystemStorage(location=settings.MEDIA_ROOT)
 
@@ -38,16 +39,30 @@ class Layer(models.Model):
     
     def __str__(self):
         return self.name
-
+    
     def delete(self, *args, **kwargs):
         try:
+
+            layers = ChoroplethLayer.objects.filter(layer=self.id)
+            for i in layers:
+                i.delete()
+
+            layers = ComposedTerritorialLevelLayer.objects.filter(is_a_composition_of=self.id)
+            for i in layers:
+                i.delete()
+
+            if _has_topology(self.name):
+                _drop_topology(self.name)
+            
+            if os.path.exists(self._file.path):
+                os.remove(self._file.path)
+            
             _ = _drop_table(self.schema_name, self.table_name)
 
             if self.status==LayerStatus.Status.LAYER_PUBLISHED:
                 _drop_table(settings.PANGEA_LAYERS_PUBLISHED_SCHEMA, self.table_name)
         except Exception as e:
             raise(e)
-            
         super(Layer, self).delete(*args, **kwargs)  
 
 
