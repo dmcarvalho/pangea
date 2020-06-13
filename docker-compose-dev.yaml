@@ -8,8 +8,8 @@ services:
         env_file:
             - ./server/scripts/docker/development/db.env
         volumes:
-            - ./data/develpment/pgdata:/var/lib/postgresql/data
-            - ./data/develpment/db-backup:/db-backup
+            - ./data/development/pgdata:/var/lib/postgresql/data
+            - ./data/development/db-backup:/db-backup
         ports:
             - 54320:5432
   
