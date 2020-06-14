@@ -59,7 +59,7 @@ class Layer(models.Model):
             
             _ = _drop_table(self.schema_name, self.table_name)
 
-            if self.status==LayerStatus.Status.LAYER_PUBLISHED:
+            if self.status >= LayerStatus.Status.LAYER_PRE_PROCESSED:
                 _drop_table(settings.PANGEA_LAYERS_PUBLISHED_SCHEMA, self.table_name)
         except Exception as e:
             raise(e)
