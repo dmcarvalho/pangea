@@ -342,8 +342,8 @@ def get_mvt(params):
         {schema_name}.{table_name}, t\
         where\
             zoom_level = {zoom_level}\
-        and t.box && {table_name}.geom \
-        and st_intersects(t.box, {table_name}.geom)) as q;".format(**params)
+            and t.box && {table_name}.geom \
+            and st_intersects(t.box, {table_name}.geom) {looking_for} ) as q;".format(**params)
     mvt = get_anything(query)[0][0]
     return mvt
 

@@ -7,8 +7,9 @@ import gzip
 from .utils.database_information import get_schemas, get_tables, get_colunms,\
     _create_topology, _create_layer_topology,\
     _populate_topology, _drop_topology, _get_layers, get_mvt, get_mvt_whithout_topology
-
 from .utils.preprocessor import pre_process_basic_territorial_level_layer, pre_process_composed_territorial_level_layer, pre_process_choroplethlayer_level_layer
+from .utils.utils import query_params_processor
+
 from .models import LayerStatus, Layer, BasicTerritorialLevelLayer, ComposedTerritorialLevelLayer
 
 
@@ -132,7 +133,6 @@ def get_layers(request):
     return JsonResponse(result, safe=False)
 
 
-
 def force_whithout_topology(layer):
     if layer.force_whithout_topology:
         return True
@@ -142,12 +142,14 @@ def force_whithout_topology(layer):
     else:
         return False
 
-
 def mvt(request, layer_name, z, x, y):
     layers = Layer.objects.filter(name=layer_name)
     if len(layers) == 1:
         layer = layers[0]        
         if layer.status == 8:
+            looking_for = query_params_processor(settings.PANGEA_LAYERS_PUBLISHED_SCHEMA,
+                                        layer.table_name, 
+                                        request.GET)
             z_min = layer.zoom_min.zoom_level 
             z_max = layer.zoom_max.zoom_level
             zoom_level = z if z_min <= int(z) and int(z) <= z_max else z_min if z_min > int(z) else z_max
@@ -160,7 +162,8 @@ def mvt(request, layer_name, z, x, y):
                 "fields": layer.fields + ',' if len(layer.fields) > 0 else '',
                 "table_name": layer.table_name,
                 "schema_name": settings.PANGEA_LAYERS_PUBLISHED_SCHEMA,
-                "zoom_level": zoom_level
+                "zoom_level": zoom_level,
+                'looking_for': looking_for
             }
             if force_whithout_topology(layer):
                 result = get_mvt_whithout_topology(params)
