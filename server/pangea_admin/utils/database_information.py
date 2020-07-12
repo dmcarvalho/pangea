@@ -350,11 +350,10 @@ def get_mvt(params):
 def get_mvt_whithout_topology(params):
     query = "\
     select\
-        st_asmvt(q, '{layer_name}', 4096, 'geom', 'ogc_fid') as mvt \
+        st_asmvt(q, '{layer_name}', 4096, 'geom',  '{geocod}') as mvt \
     from\
         (with t as (select  TileBBox({z},{x},{y}) as box) \
         select\
-            ogc_fid,\
             {geocod},\
             {fields}\
         st_asmvtgeom({table_name}.geom, t.box, 4096, 256, true) as geom\
@@ -362,6 +361,6 @@ def get_mvt_whithout_topology(params):
         {schema_name}.{table_name}, t\
         where\
             t.box && {table_name}.geom \
-            and st_intersects(t.box, {table_name}.geom)) as q;".format(**params)
+            and st_intersects(t.box, {table_name}.geom)  {looking_for} ) as q;".format(**params)
     mvt = get_anything(query)[0][0]
     return mvt    
