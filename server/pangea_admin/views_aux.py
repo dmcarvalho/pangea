@@ -133,10 +133,11 @@ def undo_process(request, layer_id):
             if _has_topology(layer.name):
                 _drop_topology(layer.name)
 
-            LayerStatus.objects.filter(layer=layer, status__gte=LayerStatus.Status.LAYER_PRE_PROCESSED).delete()            
+            LayerStatus.objects.filter(layer=layer, status__gte=LayerStatus.Status.LAYER_PRE_PROCESSED).delete() 
+            response = {"message": "Undo process complete"}           
     else:
-        response = {"message": "Undo process complete"}
-    return JsonResponse(response, safe=False)  
+        response = {"message": "Layer not Found"}
+    return JsonResponse(response, safe=False)
 
 
 @login_required
