@@ -277,7 +277,7 @@ def _get_layers(host):
 			'name', pangea_admin_layer.name,\
                         'description', pangea_admin_layer.description, 'fields',json_build_object( \
                             'gid', pangea_admin_layer.geocod_column, 'dimension', \
-                            l.dimension_column, \
+                            pangea_admin_layer.dimension_column, \
                             'attributes', columns_.fields, \
                             'geom', 'geom', \
                             'geom_type', l.geom_type, \
@@ -288,20 +288,20 @@ def _get_layers(host):
                         'host', '%s' ||  pangea_admin_layer.name || '/{z}/{x}/{y}.mvt')) as layer\
             from\
             public.pangea_admin_layer \
-            inner join ( select b.layer_ptr_id, b.dimension_column, b.geom_type, b.srid\
+            inner join ( select b.layer_ptr_id, b.geom_type, b.srid\
 			from public.pangea_admin_basicterritoriallevellayer b\
 			union\
-		select c.layer_ptr_id, b.dimension_column, b.geom_type, b.srid\
+		select c.layer_ptr_id, b.geom_type, b.srid\
 		from public.pangea_admin_composedterritoriallevellayer c,\
 		     public.pangea_admin_basicterritoriallevellayer b\
 		where c.is_a_composition_of_id = b.layer_ptr_id\
 		union\
-		select c.layer_ptr_id, b.dimension_column, b.geom_type, b.srid\
+		select c.layer_ptr_id, b.geom_type, b.srid\
 		from public.pangea_admin_choroplethlayer as c\
-		inner join (select b.layer_ptr_id, b.dimension_column,	b.geom_type, b.srid\
+		inner join (select b.layer_ptr_id,	b.geom_type, b.srid\
 		from public.pangea_admin_basicterritoriallevellayer b\
 		union\
-		select c.layer_ptr_id, b.dimension_column, b.geom_type, b.srid\
+		select c.layer_ptr_id, b.geom_type, b.srid\
 		from public.pangea_admin_composedterritoriallevellayer c,\
 		public.pangea_admin_basicterritoriallevellayer b\
 		where c.is_a_composition_of_id = b.layer_ptr_id) as b on \
@@ -310,7 +310,7 @@ def _get_layers(host):
             left join \
             (\
             select\
-                pangea_admin_layer.id,\
+                pangea_admin_layer.id, pangea_admin_layer.dimension_column,\
                 json_agg(pangea_admin_column.alias) as fields\
             from\
                 public.pangea_admin_layer,\

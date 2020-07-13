@@ -31,6 +31,7 @@ class Layer(models.Model):
     schema_name = models.CharField(max_length=200, null=True, blank=True)
     table_name = models.CharField(max_length=200, null=True, blank=True)
     geocod_column =  models.CharField(max_length=200, null=True, blank=True)
+    dimension_column =  models.CharField(max_length=200, null=True, blank=True)
 
     encoding = models.CharField(max_length=50, default='utf8', null=True, blank=True)   
 
@@ -103,7 +104,6 @@ class LayerStatus(models.Model):
 
 class BasicTerritorialLevelLayer(Layer):   
     srid = models.IntegerField()   
-    dimension_column =  models.CharField(max_length=200, null=True, blank=True)
     geom_column =  models.CharField(max_length=200, null=True, blank=True)
     geom_type = models.CharField(max_length=200, null=True, blank=True)
     topology_name = models.CharField(max_length=200, null=True, blank=True)
