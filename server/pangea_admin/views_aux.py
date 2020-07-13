@@ -5,12 +5,12 @@ from django.contrib.auth.decorators import login_required
 import gzip
 
 from .utils.database_information import get_schemas, get_tables, get_colunms,\
-    _create_topology, _create_layer_topology,\
+    _create_topology, _create_layer_topology, _drop_table, _has_topology,\
     _populate_topology, _drop_topology, _get_layers, get_mvt, get_mvt_whithout_topology
 from .utils.preprocessor import pre_process_basic_territorial_level_layer, pre_process_composed_territorial_level_layer, pre_process_choroplethlayer_level_layer
 from .utils.utils import query_params_processor
 
-from .models import LayerStatus, Layer, BasicTerritorialLevelLayer, ComposedTerritorialLevelLayer
+from .models import LayerStatus, Layer, BasicTerritorialLevelLayer, ComposedTerritorialLevelLayer, ChoroplethLayer
 
 
 @login_required
@@ -41,10 +41,10 @@ def create_topology(request, layer_id):
         topo_geom_column_name = 'topo_{0}'.format(layer.geom_column)
         
         if layer.force_whithout_topology:
-            return JsonResponse({"error": "This layer is marked to not create topology."}, safe=False)
+            return JsonResponse({"message": "This layer is marked to not create topology."}, safe=False)
 
         if layer.status >= LayerStatus.Status.TOPOLOGY_CREATED:
-            return JsonResponse({"error": "This layer already has a topology"}, safe=False)
+            return JsonResponse({"message": "This layer already has a topology"}, safe=False)
         try:
             topology_name, topology_id = _create_topology(
                 topology_name, layer.srid)
@@ -86,8 +86,8 @@ def create_topology(request, layer_id):
     else:
         layers = Layer.objects.filter(id=layer_id)
         if len(layers) == 1:
-            return JsonResponse({"error": "It's not necessary create a topology for this kind of layer!"}, safe=False)
-        return JsonResponse({"error": "Layer not Found"}, safe=False)
+            return JsonResponse({"message": "It's not necessary create a topology for this kind of layer!"}, safe=False)
+        return JsonResponse({"message": "Layer not Found"}, safe=False)
 
 @login_required
 def pre_process_layer(request, layer_id):
@@ -107,8 +107,37 @@ def pre_process_layer(request, layer_id):
             layer = layer.choroplethlayer
             response = pre_process_choroplethlayer_level_layer(layer)
     else:
-        response = {"error": "Layer not Found"}
+        response = {"message": "Layer not Found"}
     return JsonResponse(response, safe=False)
+
+
+
+@login_required
+def undo_process(request, layer_id):
+    layers = Layer.objects.filter(id=layer_id) 
+    response = 'None'
+    if len(layers) == 1:
+        layer = layers[0]
+        choropleth = ChoroplethLayer.objects.filter(layer=layer.id)
+        composed = ComposedTerritorialLevelLayer.objects.filter(is_a_composition_of=layer.id)
+        dependents = [{i.id:i.name } for i in choropleth if i.status >= LayerStatus.Status.LAYER_PRE_PROCESSED] +\
+                [ {i.id: i.name} for i in composed if i.status >= LayerStatus.Status.LAYER_PRE_PROCESSED]
+        if ( dependents ):
+            return JsonResponse({'message':'First off all, you must delete these layers', 'layers': dependents}, safe=False)
+        elif (layer.status < LayerStatus.Status.LAYER_PRE_PROCESSED):
+            return JsonResponse({'message':"There is nothing to do. This Layer isn't processed yet."}, safe=False)
+        else:
+
+            _drop_table(settings.PANGEA_LAYERS_PUBLISHED_SCHEMA, layer.table_name)
+
+            if _has_topology(layer.name):
+                _drop_topology(layer.name)
+
+            LayerStatus.objects.filter(layer=layer, status__gte=LayerStatus.Status.LAYER_PRE_PROCESSED).delete()            
+    else:
+        response = {"message": "Undo process complete"}
+    return JsonResponse(response, safe=False)  
+
 
 @login_required
 def publish_layer(request, layer_id):
@@ -133,16 +162,16 @@ def get_layers(request):
     return JsonResponse(result, safe=False)
 
 
-def force_whithout_topology(layer):
-    if layer.force_whithout_topology:
-        return True
-    elif hasattr(layer, 'choroplethlayer'):
-        layer = layer.choroplethlayer
-        return layer.layer.force_whithout_topology
-    else:
-        return False
-
 def mvt(request, layer_name, z, x, y):
+    def force_whithout_topology(layer):
+        if layer.force_whithout_topology:
+            return True
+        elif hasattr(layer, 'choroplethlayer'):
+            layer = layer.choroplethlayer
+            return layer.layer.force_whithout_topology
+        else:
+            return False
+
     layers = Layer.objects.filter(name=layer_name)
     if len(layers) == 1:
         layer = layers[0]        

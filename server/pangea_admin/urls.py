@@ -28,6 +28,7 @@ urlpatterns = [
     path('api/createtopology/<layer_id>/', views_aux.create_topology),
     path('api/preprocesslayer/<layer_id>/', views_aux.pre_process_layer),
     path('api/publishlayer/<layer_id>/', views_aux.publish_layer),
+    path('api/undoprocess/<layer_id>/', views_aux.undo_process),
     path('', views_aux.get_layers),
     path('tile/<layer_name>/<z>/<x>/<y>.mvt', views_aux.mvt),
 
