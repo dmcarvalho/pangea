@@ -68,7 +68,7 @@ class BasicTerritorialLevelLayerSerializer(serializers.ModelSerializer):
             "srid": validated_data['srid']
         }
         
-        table_name = 'tb_' + generate_safe_name(validated_data['name'])
+        table_name = generate_safe_name(validated_data['name'])
         validated_data['table_name'] = table_name
         validated_data['schema_name'] = PANGEA_IMPORTED_DATA_SCHEMA
 
@@ -127,7 +127,7 @@ class ComposedTerritorialLevelLayerSerializer(serializers.ModelSerializer):
     
     @transaction.atomic
     def create(self, validated_data):
-        table_name = 'tb_' + generate_safe_name(validated_data['name'])
+        table_name = generate_safe_name(validated_data['name'])
         validated_data['table_name'] = table_name
         validated_data['schema_name'] = PANGEA_IMPORTED_DATA_SCHEMA
 
@@ -195,7 +195,7 @@ class ChoroplethLayerSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def create(self, validated_data):
         
-        table_name = 'tb_' + generate_safe_name(validated_data['name'])
+        table_name = generate_safe_name(validated_data['name'])
         validated_data['table_name'] = table_name
         validated_data['schema_name'] = PANGEA_IMPORTED_DATA_SCHEMA
 
