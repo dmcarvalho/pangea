@@ -4,12 +4,11 @@ from .database_information import get_colunms
 def generate_safe_name(name):
     return unidecode.unidecode('{0}'.format(name)).replace(' ', '_').replace('-', '_').lower()
 
-
 def build_query_for_array_string(column, values):
-    pass
+    return '%s  && ARRAY[%s]' % (column, ', '.join(["'%s'" % i for i in values]))
 
 def build_query_for_array_numeric(column, values):
-    pass
+    return '%s && ARRAY[%s]' % (column, ', '.join(values))
 
 def build_query_for_string(column, values):
     return '%s IN (%s)' % (column, ', '.join(["'%s'" % i for i in values]))
@@ -39,7 +38,6 @@ build_query_for = {'_char': build_query_for_array_string,
             'numeric': build_query_for_numeric,
             'float4': build_query_for_numeric,
             'int2': build_query_for_numeric}
-
 
 
 def query_params_processor(schema_name, table_name, params):
