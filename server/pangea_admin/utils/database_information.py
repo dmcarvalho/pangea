@@ -191,7 +191,7 @@ def _pre_process_basic_territorial_level_layer_whithout_topology(params):
     """
     try:
         query = '\
-        CREATE TABLE {layers_published_schema}.{table_name} as SELECT ogc_fid, {geocod}, {columns} \
+        CREATE TABLE {layers_published_schema}.{table_name} as SELECT {geocod}, {columns} \
             st_transform({table_name}.{geom_column}, 3857) as geom\
         FROM\
             {imported_data_schema}.{table_name};'.format(**params)
@@ -233,7 +233,7 @@ def _pre_process_choroplethlayer_level_layer_whithout_topology(params):
         query = '\
             CREATE TABLE {layers_published_schema}.{table_name} AS\
             SELECT \
-                {base_table_name}.ogc_fid,\
+                {base_table_name}.{base_geocod},\
                 {table_name}.{geocod}, \
                 {columns}\
                 {base_table_name}.geom\
