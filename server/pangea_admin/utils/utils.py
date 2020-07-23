@@ -4,16 +4,16 @@ from .database_information import get_colunms
 def generate_safe_name(name):
     return unidecode.unidecode('{0}'.format(name)).replace(' ', '_').replace('-', '_').lower()
 
-def build_query_for_array_string(column, values):
-    return '%s  && ARRAY[%s]' % (column, ', '.join(["'%s'" % i for i in values]))
+def build_query_for_array_string(column, values, tp = None):
+    return '%s  && ARRAY[%s]::%s[]' % (column, ', '.join(["'%s'" % i for i in values]), tp)
 
-def build_query_for_array_numeric(column, values):
-    return '%s && ARRAY[%s]' % (column, ', '.join(values))
+def build_query_for_array_numeric(column, values, tp = None):
+    return '%s && ARRAY[%s]::%s[]' % (column, ', '.join(values), tp)
 
-def build_query_for_string(column, values):
+def build_query_for_string(column, values, tp = None):
     return '%s IN (%s)' % (column, ', '.join(["'%s'" % i for i in values]))
 
-def build_query_for_numeric(column, values):
+def build_query_for_numeric(column, values, tp = None):
     return '%s IN (%s)' % (column, ', '.join(values))
 
 build_query_for = {'_char': build_query_for_array_string,
@@ -45,6 +45,6 @@ def query_params_processor(schema_name, table_name, params):
     valid_keys = [i for i in params.keys() if i in colunms]
     query = []
     for i in valid_keys:
-        q = build_query_for[colunms[i]](i, params.getlist(i)) 
+        q = build_query_for[colunms[i]](i, params.getlist(i), colunms[i][1:]) 
         query.append(q)
     return 'AND ' + ' AND '.join(query) if query else ''
