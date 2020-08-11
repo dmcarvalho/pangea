@@ -364,3 +364,63 @@ def get_mvt_whithout_topology(params):
             and st_intersects(t.box, {table_name}.geom)  {looking_for} ) as q;".format(**params)
     mvt = get_anything(query)[0][0]
     return mvt    
+
+
+def get_label_mvt(params):
+    query = "\
+    select\
+        st_asmvt(q, 'label_{layer_name}', 4096, 'geom', '{geocod}') as mvt \
+    from\
+        (with t as (select  TileBBox({z},{x},{y}) as box,\
+            st_transform(ST_MakeEnvelope({bbox},4674),3857) as mapbbox) \
+        select\
+            {geocod},\
+            {fields}\
+        st_asmvtgeom(st_pointonsurface(st_intersection(t.mapbbox, {table_name}.geom)), t.box, 4096, 20, true) as geom\
+        from\
+        {schema_name}.{table_name}, t\
+        where\
+            zoom_level = {zoom_level}\
+            and t.mapbbox &&  {table_name}.geom \
+			and t.box &&  {table_name}.geom \
+			and st_intersects(t.box, st_pointonsurface(st_intersection(t.mapbbox, {table_name}.geom))) {looking_for} ) as q;".format(**params)
+    mvt = get_anything(query)[0][0]
+    return mvt
+
+def get_label_whithout_topology(params):
+    query = "\
+    select\
+        st_asmvt(q, 'label_{layer_name}', 4096, 'geom',  '{geocod}') as mvt \
+    from\
+        (with t as (select  TileBBox({z},{x},{y}) as box,\
+        st_transform(ST_MakeEnvelope({bbox},4674),3857) as mapbbox\
+        ) \
+        select\
+            {geocod},\
+            {fields}\
+        st_asmvtgeom(st_pointonsurface(st_intersection(t.mapbbox, {table_name}.geom)), t.box, 4096, 20, true) as geom\
+        from\
+        {schema_name}.{table_name}, t\
+        where\
+           	t.mapbbox &&  {table_name}.geom \
+			and t.box &&  {table_name}.geom \
+			and st_intersects(t.box, st_pointonsurface(st_intersection(t.mapbbox, {table_name}.geom))) {looking_for} ) as q;".format(**params)
+    mvt = get_anything(query)[0][0]
+    return mvt 
+
+
+
+
+def get_bbox(params):
+    query = "with bbox as (\
+            select \
+                st_transform(st_setsrid(st_extent({table_name}.geom), 3857),4674) geom \
+                from  {schema_name}.{table_name} \
+                {looking_for}) \
+            select \
+            json_build_object(\
+                'sw', json_build_object( 'long', st_xmin(geom), 'lat', st_ymin(geom)), \
+                'ne', json_build_object( 'long' ,st_xmax(geom), 'lat', st_ymax(geom))) bbox \
+            from bbox;".format(**params)
+    r = get_anything(query)[0][0]
+    return r

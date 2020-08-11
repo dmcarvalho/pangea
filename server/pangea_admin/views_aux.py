@@ -6,7 +6,8 @@ import gzip
 
 from .utils.database_information import get_schemas, get_tables, get_colunms,\
     _create_topology, _create_layer_topology, _drop_table, _has_topology,\
-    _populate_topology, _drop_topology, _get_layers, get_mvt, get_mvt_whithout_topology
+    _populate_topology, _drop_topology, _get_layers, get_mvt, get_mvt_whithout_topology, get_bbox,\
+    get_label_whithout_topology, get_label_mvt
 from .utils.preprocessor import pre_process_basic_territorial_level_layer, pre_process_composed_territorial_level_layer, pre_process_choroplethlayer_level_layer
 from .utils.utils import query_params_processor
 
@@ -206,3 +207,81 @@ def mvt(request, layer_name, z, x, y):
     response = HttpResponse(gzip.compress(b''), content_type='application/x-protobuf')
     response['Content-Encoding'] = 'gzip'
     return response    
+
+
+def bbox(request, layer_name):
+    def force_whithout_topology(layer):
+        if layer.force_whithout_topology:
+            return True
+        elif hasattr(layer, 'choroplethlayer'):
+            layer = layer.choroplethlayer
+            return layer.layer.force_whithout_topology
+        else:
+            return False
+
+    layers = Layer.objects.filter(name=layer_name)
+    if len(layers) == 1:
+        layer = layers[0]        
+        if layer.status == 8:
+            looking_for = query_params_processor(settings.PANGEA_LAYERS_PUBLISHED_SCHEMA,
+                                        layer.table_name, 
+                                        request.GET, False)
+            looking_for
+            params = {
+                "layer_name": layer.name,
+                "table_name": layer.table_name,
+                "schema_name": settings.PANGEA_LAYERS_PUBLISHED_SCHEMA,
+                'looking_for': looking_for
+            }
+            result = get_bbox(params)           
+            return JsonResponse(result, safe=False)
+    return JsonResponse(None, safe=False)    
+
+
+
+def label(request, layer_name, z, x, y):
+    def force_whithout_topology(layer):
+        if layer.force_whithout_topology:
+            return True
+        elif hasattr(layer, 'choroplethlayer'):
+            layer = layer.choroplethlayer
+            return layer.layer.force_whithout_topology
+        else:
+            return False
+
+    layers = Layer.objects.filter(name=layer_name)
+    if len(layers) == 1:
+        layer = layers[0]        
+        if layer.status == 8:
+            looking_for = query_params_processor(settings.PANGEA_LAYERS_PUBLISHED_SCHEMA,
+                                        layer.table_name, 
+                                        request.GET)
+            bbox = request.GET.get('bbox')
+            z_min = layer.zoom_min.zoom_level 
+            z_max = layer.zoom_max.zoom_level
+            zoom_level = z if z_min <= int(z) and int(z) <= z_max else z_min if z_min > int(z) else z_max
+            params = {
+                "layer_name": layer.name,
+                "geocod": layer.geocod_column,
+                "z": z,
+                "x": x,
+                "y": y,
+                "fields": layer.fields + ',' if len(layer.fields) > 0 else '',
+                "table_name": layer.table_name,
+                "schema_name": settings.PANGEA_LAYERS_PUBLISHED_SCHEMA,
+                "zoom_level": zoom_level,
+                'looking_for': looking_for,
+                'bbox': bbox
+            }
+            if force_whithout_topology(layer):
+                result = get_label_whithout_topology(params)
+            else:
+                result = get_label_mvt(params)
+            response = HttpResponse(gzip.compress(
+                result), content_type='application/x-protobuf')
+            response['Content-Encoding'] = 'gzip'
+            return response
+    response = HttpResponse(gzip.compress(b''), content_type='application/x-protobuf')
+    response['Content-Encoding'] = 'gzip'
+    return response    
+

@@ -31,6 +31,10 @@ urlpatterns = [
     path('api/undoprocess/<layer_id>/', views_aux.undo_process),
     path('', views_aux.get_layers),
     path('tile/<layer_name>/<z>/<x>/<y>.mvt', views_aux.mvt),
+    path('bbox/<layer_name>', views_aux.bbox),
+    path('label/<layer_name>/<z>/<x>/<y>.mvt', views_aux.label),
+
+
 
 
 ]   

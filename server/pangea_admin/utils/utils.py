@@ -40,11 +40,16 @@ build_query_for = {'_char': build_query_for_array_string,
             'int2': build_query_for_numeric}
 
 
-def query_params_processor(schema_name, table_name, params):
+def query_params_processor(schema_name, table_name, params, append=True):
     colunms = {i['column']: i['type'] for i in get_colunms(schema_name, table_name)}
     valid_keys = [i for i in params.keys() if i in colunms]
     query = []
     for i in valid_keys:
         q = build_query_for[colunms[i]](i, params.getlist(i), colunms[i][1:]) 
         query.append(q)
-    return 'AND ' + ' AND '.join(query) if query else ''
+    if query:
+        result = ' AND '.join(query)
+        return 'AND ' + result  if append else 'WHERE ' + result
+    else:
+        return ''
+
