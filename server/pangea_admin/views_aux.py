@@ -257,6 +257,8 @@ def label(request, layer_name, z, x, y):
                                         layer.table_name, 
                                         request.GET)
             bbox = request.GET.get('bbox')
+            if not bbox:
+                bbox = '-179.99,-89.99,179.99,89.99'
             z_min = layer.zoom_min.zoom_level 
             z_max = layer.zoom_max.zoom_level
             zoom_level = z if z_min <= int(z) and int(z) <= z_max else z_min if z_min > int(z) else z_max
