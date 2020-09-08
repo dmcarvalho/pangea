@@ -39,16 +39,33 @@ class Layer(models.Model):
     def __str__(self):
         return self.name
 
+
+
     def delete(self, *args, **kwargs):
         try:
+
+            layers = ChoroplethLayer.objects.filter(layer=self.id)
+            for i in layers:
+                i.delete()
+
+            layers = ComposedTerritorialLevelLayer.objects.filter(is_a_composition_of=self.id)
+            for i in layers:
+                i.delete()
+
+            if _has_topology(self.name):
+                _drop_topology(self.name)
+            
+            if os.path.exists(self._file.path):
+                os.remove(self._file.path)
+            
             _ = _drop_table(self.schema_name, self.table_name)
 
-            if self.status==LayerStatus.Status.LAYER_PUBLISHED:
-                _drop_table(settings.PANGEA_LAYERS_PUBLISHED_SCHEMA, self.table_name)
+            _ = _drop_table(settings.PANGEA_LAYERS_PUBLISHED_SCHEMA, self.table_name)
         except Exception as e:
             raise(e)
-            
         super(Layer, self).delete(*args, **kwargs)  
+
+
 
 
     @property
