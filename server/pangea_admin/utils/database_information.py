@@ -6,11 +6,24 @@ engine = create_engine(settings.PANGEA_DB_URI, pool_recycle=3600)
 conn = engine.connect()
 
 def get_anything(query):
-    result = conn.execute(sqlalchemy_text(query))
-    result = result.cursor.fetchall()
-    if len(result) > 0:
-        return result
-    return None
+    result = None
+    try:
+        engine = create_engine(settings.PANGEA_DB_URI)
+    except:
+        return
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(sqlalchemy_text(query))
+            if result.cursor:
+                result = result.cursor.fetchall()
+            else:
+                result = None
+    except Exception as e:
+        raise(e)
+    finally:
+        conn.close()
+
+    return result
 
 
 def execute_anything(query):
@@ -126,7 +139,7 @@ def _create_layer_topology(params):
 
 def _has_topology(topology_name):
     query = "SELECT * FROM information_schema.schemata where schema_name = '{0}'".format(topology_name)
-    if get_anything(query):
+    if execute_anything(query):
         return True
     return False
 

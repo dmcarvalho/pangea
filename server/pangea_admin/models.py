@@ -4,7 +4,8 @@ from pangea import settings
 # Create your models here.
 from .utils.utils import generate_safe_name
 
-from .utils.database_information import _drop_table
+from .utils.database_information import _drop_table, _has_topology, _drop_topology
+import os
 
 from django.core.files.storage import FileSystemStorage
 
